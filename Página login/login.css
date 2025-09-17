@@ -1,0 +1,92 @@
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+/* Fundo e alinhamento central */
+body {
+  background: linear-gradient(135deg, #2b5876, #4e4376);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+}
+
+/* Container principal */
+.login-container {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 360px; /* limita no desktop */
+  box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+  text-align: center;
+}
+
+/* Título e texto */
+.login-container h1 {
+  font-size: 1.4rem;
+  margin-bottom: 0.8rem;
+  color: #333;
+}
+
+.login-container p {
+  font-size: 0.9rem;
+  margin-bottom: 1.2rem;
+  color: #666;
+}
+
+/* Campos do formulário */
+.form-group {
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  color: #333;
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  font-size: 1rem;
+}
+
+/* Botão principal */
+.btn {
+  width: 100%;
+  padding: 0.9rem;
+  border: none;
+  border-radius: 10px;
+  background: #4e4376;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.btn:hover {
+  background: #2b5876;
+}
+
+/* Link extra */
+.extra-links {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+}
+
+.extra-links a {
+  color: #4e4376;
+  text-decoration: none;
+  font-weight: bold;
+}
