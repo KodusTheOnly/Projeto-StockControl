@@ -1,25 +1,28 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Login</title>
-  <link rel="stylesheet" href="login.css" />
+  <title>Criar conta</title>
+  <link rel="stylesheet" href="/RF01 - Gestão de Usuário da Empresa/assets/css/criar_conta.css" />
 </head>
 <body>
+
 <div class="caixa-formulario">
   <form class="formulario" action="#" method="post">
-    <span class="titulo">Entrar</span>
-    <span class="subtitulo">Acesse sua conta com e-mail e senha.</span>
+    <span class="titulo">Criar conta</span>
+    <span class="subtitulo">Crie sua conta usando seu e-mail.</span>
     <div class="container-formulario">
+      <input type="text" class="entrada" name="nome" placeholder="Nome completo" required>
       <input type="email" class="entrada" name="email" placeholder="E-mail" required>
       <input type="password" class="entrada" name="senha" placeholder="Senha" required>
     </div>
-    <button type="submit">Entrar</button>
+    <button type="submit">Criar conta</button>
   </form>
   <div class="secao-formulario">
-    <p>Não tem uma conta? <a href="/RF01 - Gestão de Usuário da Empresa/RF01.1 Criar Conta/criar_conta.html">Cadastre-se</a></p>
+    <p>Já tem conta? <a href="/RF01 - Gestão de Usuário da Empresa/login.html">Entrar</a></p>
   </div>
 </div>
+
 </body>
 </html>
