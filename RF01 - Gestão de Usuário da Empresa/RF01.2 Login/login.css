@@ -1,11 +1,23 @@
-.form-box {
+/* Reset leve */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: #eef3fb;
+}
+
+/* Container */
+.caixa-formulario {
   max-width: 300px;
   background: #f1f7fe;
   overflow: hidden;
   border-radius: 16px;
   color: #010101;
+  margin: 40px auto;
 }
-.form {
+
+/* Formulário */
+.formulario {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -13,24 +25,28 @@
   gap: 16px;
   text-align: center;
 }
-/*Form texto*/
-  .title {
-    font-weight: bold;
-    font-size: 1.6rem;
-  }
-  .subtitle {
-    font-size: 1rem;
-    color: #666;
-  }
-/*Inputs box*/
-.form-container {
+
+/* Texto */
+.titulo {
+  font-weight: bold;
+  font-size: 1.6rem;
+}
+
+.subtitulo {
+  font-size: 1rem;
+  color: #666;
+}
+
+/* Entradas */
+.container-formulario {
   overflow: hidden;
   border-radius: 8px;
   background-color: #fff;
   margin: 1rem 0 .5rem;
   width: 100%;
 }
-.input {
+
+.entrada {
   background: none;
   border: 0;
   outline: 0;
@@ -40,23 +56,28 @@
   font-size: .9rem;
   padding: 8px 15px;
 }
-.form-section {
+
+/* Rodapé */
+.secao-formulario {
   padding: 16px;
   font-size: .85rem;
   background-color: #e0ecfb;
   box-shadow: rgb(0 0 0 / 8%) 0 -1px;
 }
-.form-section a {
+
+.secao-formulario a {
   font-weight: bold;
   color: #0066ff;
   transition: color .3s ease;
 }
-.form-section a:hover {
+
+.secao-formulario a:hover {
   color: #005ce6;
   text-decoration: underline;
 }
-/*Button*/
-.form button {
+
+/* Botão */
+.formulario button {
   background-color: #0066ff;
   color: #fff;
   border: 0;
@@ -67,6 +88,7 @@
   cursor: pointer;
   transition: background-color .3s ease;
 }
-.form button:hover {
+
+.formulario button:hover {
   background-color: #005ce6;
 }
