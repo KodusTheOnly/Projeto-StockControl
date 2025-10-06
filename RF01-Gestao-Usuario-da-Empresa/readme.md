@@ -11,4 +11,4 @@
 
 # COMO SE CONECTAR
 coloque a pasta no HTDOCS, e depois insira o link no browser:
-http://localhost/Projeto-StockControl/RF01%20-%20Gest%C3%A3o%20de%20Usu%C3%A1rio%20da%20Empresa/login.html
+http://localhost/Projeto-StockControl/RF01-Gestao-Usuario-da-Empresa/criar-conta.html

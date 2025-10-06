@@ -1,6 +1,6 @@
 CREATE SCHEMA cadastro_usuarios;
 USE cadastro_usuarios;
-
+SELECT * FROM usuarios;
 CREATE TABLE usuarios (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   nome VARCHAR(120) NOT NULL,
