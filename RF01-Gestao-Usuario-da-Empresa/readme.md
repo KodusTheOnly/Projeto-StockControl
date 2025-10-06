@@ -8,3 +8,7 @@
 * Prioridade: (X) Essencial	( ) Importante	( ) Desejável
 * Entradas e pré-condições: Validação do usuário, (e-mail)
 * Saídas e pós-condições: Autenticação do usuário e ou autenticação da senha e(ou) recuperação da senha executadas.
+
+# COMO SE CONECTAR
+coloque a pasta no HTDOCS, e depois insira o link no browser:
+http://localhost/Projeto-StockControl/RF01%20-%20Gest%C3%A3o%20de%20Usu%C3%A1rio%20da%20Empresa/login.html
