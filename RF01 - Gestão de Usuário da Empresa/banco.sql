@@ -1,0 +1,11 @@
+CREATE SCHEMA cadastro_usuarios;
+USE cadastro_usuarios;
+
+CREATE TABLE usuarios (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  nome VARCHAR(120) NOT NULL,
+  email VARCHAR(160) NOT NULL UNIQUE,
+  senha_hash VARCHAR(255) NOT NULL,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id)
+)
