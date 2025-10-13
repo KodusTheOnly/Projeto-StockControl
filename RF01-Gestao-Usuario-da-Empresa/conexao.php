@@ -1,6 +1,6 @@
 <?php
 define("HOST", "localhost");
-define("PORT", "3307"); // ajuste se seu MySQL usa 3306
+define("PORT", "3307");
 define("USER", "root");
 define("PAS", "");
 define("BASE", "cadastro_usuarios");
