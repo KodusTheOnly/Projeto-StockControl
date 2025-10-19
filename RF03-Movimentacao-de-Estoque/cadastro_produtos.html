@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestão de Produtos (RF03.1)</title>
+
+  <style>
+    /* ======== ESTILO GERAL ======== */
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f4f8;
+      margin: 0;
+      padding: 30px;
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    /* ======== FORMULÁRIO ======== */
+    form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin-top: 5px;
+    }
+
+    button {
+      grid-column: span 2;
+      padding: 10px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    /* ======== TABELA DE CONSULTA ======== */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background: #007bff;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+
+    .actions button {
+      padding: 5px 8px;
+      margin: 0 2px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .edit {
+      background: #ffc107;
+    }
+
+    .delete {
+      background: #dc3545;
+      color: white;
+    }
+
+    .search-box {
+      text-align: right;
+      margin-bottom: 10px;
+    }
+
+    .search-box input {
+      padding: 8px;
+      width: 250px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>Gestão de Produtos</h2>
+
+    <!-- ======== FORMULÁRIO DE CADASTRO ======== -->
+    <form id="form-produto">
+      <div>
+        <label>Nome do Produto</label>
+        <input type="text" id="nome" placeholder="Ex: Leite Integral" required>
+      </div>
+
+      <div>
+        <label>Categoria</label>
+        <select id="categoria" required>
+          <option value="">Selecione</option>
+          <option>Bebidas</option>
+          <option>Higiene</option>
+          <option>Alimentos</option>
+          <option>Limpeza</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Fornecedor</label>
+        <input type="text" id="fornecedor" placeholder="Ex: Laticínios Brasil" required>
+      </div>
+
+      <div>
+        <label>Lote</label>
+        <input type="text" id="lote" placeholder="Ex: L1024" required>
+      </div>
+
+      <div>
+        <label>Validade</label>
+        <input type="date" id="validade" required>
+      </div>
+
+      <div>
+        <label>Quantidade</label>
+        <input type="number" id="quantidade" min="1" placeholder="Ex: 50" required>
+      </div>
+
+      <button type="submit">Salvar Produto</button>
+    </form>
+
+    <!-- ======== CAMPO DE BUSCA ======== -->
+    <div class="search-box">
+      <input type="text" id="buscar" placeholder="Buscar produto...">
+    </div>
+
+    <!-- ======== TABELA DE CONSULTA ======== -->
+    <table id="tabela-produtos">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Categoria</th>
+          <th>Fornecedor</th>
+          <th>Lote</th>
+          <th>Validade</th>
+          <th>Quantidade</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Produtos aparecerão aqui -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ======== SCRIPT ======== -->
+  <script>
+    // Recupera elementos da página
+    const form = document.getElementById('form-produto');
+    const tabela = document.getElementById('tabela-produtos').querySelector('tbody');
+    const buscarInput = document.getElementById('buscar');
+
+    // Lista de produtos (salva no navegador)
+    let produtos = JSON.parse(localStorage.getItem('produtos')) || [];
+    let editIndex = null; // Guarda o índice do produto sendo editado
+
+    // Função para atualizar tabela
+    function atualizarTabela(filtro = '') {
+      tabela.innerHTML = '';
+      produtos
+        .filter(p => p.nome.toLowerCase().includes(filtro.toLowerCase()))
+        .forEach((p, index) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${p.nome}</td>
+            <td>${p.categoria}</td>
+            <td>${p.fornecedor}</td>
+            <td>${p.lote}</td>
+            <td>${p.validade}</td>
+            <td>${p.quantidade}</td>
+            <td class="actions">
+              <button class="edit" onclick="editarProduto(${index})">Editar</button>
+              <button class="delete" onclick="excluirProduto(${index})">Excluir</button>
+            </td>
+          `;
+          tabela.appendChild(tr);
+        });
+    }
+
+    // Cadastrar ou editar produto
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+
+      const novoProduto = {
+        nome: form.nome.value,
+        categoria: form.categoria.value,
+        fornecedor: form.fornecedor.value,
+        lote: form.lote.value,
+        validade: form.validade.value,
+        quantidade: form.quantidade.value
+      };
+
+      // Verifica duplicidade (mesmo nome + lote)
+      const duplicado = produtos.some(
+        (p, i) => p.nome === novoProduto.nome && p.lote === novoProduto.lote && i !== editIndex
+      );
+      if (duplicado) {
+        alert('Já existe um produto com este nome e lote.');
+        return;
+      }
+
+      if (editIndex !== null) {
+        produtos[editIndex] = novoProduto; // Atualiza produto existente
+        editIndex = null;
+      } else {
+        produtos.push(novoProduto); // Adiciona novo produto
+      }
+
+      localStorage.setItem('produtos', JSON.stringify(produtos));
+      form.reset();
+      atualizarTabela();
+    });
+
+    // Função para editar produto
+    function editarProduto(index) {
+      const p = produtos[index];
+      form.nome.value = p.nome;
+      form.categoria.value = p.categoria;
+      form.fornecedor.value = p.fornecedor;
+      form.lote.value = p.lote;
+      form.validade.value = p.validade;
+      form.quantidade.value = p.quantidade;
+      editIndex = index;
+    }
+
+    // Função para excluir produto
+    function excluirProduto(index) {
+      if (confirm('Tem certeza que deseja excluir este produto?')) {
+        produtos.splice(index, 1);
+        localStorage.setItem('produtos', JSON.stringify(produtos));
+        atualizarTabela();
+      }
+    }
+
+    // Busca em tempo real
+    buscarInput.addEventListener('input', e => {
+      atualizarTabela(e.target.value);
+    });
+
+    // Atualiza tabela ao carregar página
+    atualizarTabela();
+  </script>
+</body>
+</html>
