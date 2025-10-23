@@ -22,12 +22,25 @@ $valido = $tk && !$tk['usado_em'] && $expira && $agora <= $expira;
 
 if (!$valido) { echo 'Link inválido ou expirado.'; exit; }
 ?>
-<!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><title>Definir nova senha</title></head>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login</title>
+  <link rel="stylesheet" href="assets/css/login.css" /> <!-- UTILIZANDO COMO REFERÊNCIA O CSS DE LOGIN -->
+</head>
 <body>
-  <form action="atualizar-senha.php" method="post">
+<div class="caixa-formulario">
+  <form class="formulario" action="atualizar-senha.php" method="post">
+    <span class="titulo">Recuperar senha</span>
+    <span class="subtitulo">Recupere sua conta com o seu email</span>
+    <div class="container-formulario">
     <input type="hidden" name="token" value="<?php echo htmlspecialchars($token, ENT_QUOTES); ?>">
-    <input type="password" name="senha" placeholder="Nova senha" required>
+    <input type="password" class="entrada" name="senha" placeholder="Nova senha" required>
+    </div>
     <button type="submit">Atualizar senha</button>
   </form>
-</body></html>
+</div>
+</body>
+</html>

@@ -1,6 +1,6 @@
 # COMO SE CONECTAR
 coloque a pasta no HTDOCS, e depois insira o link no browser:
-http://localhost/Projeto-StockControl/RF01-Gestao-Usuario-da-Empresa/criar-conta.html
+http://localhost/Projeto-StockControl/criar-conta.html
 
 # COMO APLICAR CONTROLE DE ACESSO NAS PÁGINAS:
 No topo de qualquer página que exija login:
