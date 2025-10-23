@@ -1,10 +1,13 @@
 <?php
-include_once 'conexao.php';
+// conexao banco
+include_once 'conexao.php'; 
 
+// msg erro banco
 $token = $_GET['token'] ?? '';
-if ($token === '') { http_response_code(400); echo 'Token ausente.'; exit; }
+if ($token === '') { http_response_code(400); echo 'Token ausente.'; exit; } 
 
-$stmt = $conn->prepare("
+// busca token de login
+$stmt = $conn->prepare(" 
   SELECT t.id, t.usuario_id, t.expira_em, t.usado_em, u.email
   FROM senha_tokens t
   JOIN usuarios u ON u.id = t.usuario_id
@@ -13,13 +16,12 @@ $stmt = $conn->prepare("
 $stmt->bind_param('s', $token);
 $stmt->execute();
 $res = $stmt->get_result();
-$tk = $res->fetch_assoc();
+$tk = $res->fetch_assoc(); 
 
+// expiração do token
 $agora = new DateTime();
 $expira = $tk ? new DateTime($tk['expira_em']) : null;
-
 $valido = $tk && !$tk['usado_em'] && $expira && $agora <= $expira;
-
 if (!$valido) { echo 'Link inválido ou expirado.'; exit; }
 ?>
 <!DOCTYPE html>
@@ -31,6 +33,7 @@ if (!$valido) { echo 'Link inválido ou expirado.'; exit; }
   <link rel="stylesheet" href="assets/css/login.css" /> <!-- UTILIZANDO COMO REFERÊNCIA O CSS DE LOGIN -->
 </head>
 <body>
+<!-- Aplica troca de senha -->
 <div class="caixa-formulario">
   <form class="formulario" action="atualizar-senha.php" method="post">
     <span class="titulo">Recuperar senha</span>
