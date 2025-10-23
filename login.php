@@ -3,8 +3,8 @@
 include_once 'conexao.php'; // Conexão banco
 if (session_status() !== PHP_SESSION_ACTIVE) session_start(); // sessão do usuario
 
-$email = trim($_POST['email'] ?? ''); /* lê email e senha
-$senha = $_POST['senha'] ?? ''; */
+$email = trim($_POST['email'] ?? ''); /* lê email e senha*/
+$senha = $_POST['senha'] ?? ''; 
 
 if ($email === '' || $senha === '') {
   echo "<script>alert('Informe e-mail e senha');history.back();</script>";
