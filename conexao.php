@@ -1,4 +1,5 @@
 <?php
+// conexao com o banco de dados
 define("HOST", "localhost");
 define("PORT", "3307");
 define("USER", "root");
