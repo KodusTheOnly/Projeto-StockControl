@@ -93,12 +93,8 @@
       cursor: pointer;
     }
 
-    .edit {
-      background: #ffc107;
-    }
-
-    .delete {
-      background: #dc3545;
+    .view {
+      background: #17a2b8;
       color: white;
     }
 
@@ -187,100 +183,103 @@
 
   <!-- ======== SCRIPT ======== -->
   <script>
-    // Recupera elementos da página
     const form = document.getElementById('form-produto');
     const tabela = document.getElementById('tabela-produtos').querySelector('tbody');
     const buscarInput = document.getElementById('buscar');
+    const API_URL = 'produtos.php';
 
-    // Lista de produtos (salva no navegador)
-    let produtos = JSON.parse(localStorage.getItem('produtos')) || [];
-    let editIndex = null; // Guarda o índice do produto sendo editado
+    let produtos = [];
 
-    // Função para atualizar tabela
-    function atualizarTabela(filtro = '') {
+    function criarCelula(tr, valor) {
+      const td = document.createElement('td');
+      td.textContent = valor ?? '';
+      tr.appendChild(td);
+    }
+
+    function renderTabela(filtro = '') {
+      const termo = (filtro || '').toLowerCase();
       tabela.innerHTML = '';
+
       produtos
-        .filter(p => p.nome.toLowerCase().includes(filtro.toLowerCase()))
-        .forEach((p, index) => {
+        .filter(p => (p.nome || '').toLowerCase().includes(termo))
+        .forEach(p => {
           const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${p.nome}</td>
-            <td>${p.categoria}</td>
-            <td>${p.fornecedor}</td>
-            <td>${p.lote}</td>
-            <td>${p.validade}</td>
-            <td>${p.quantidade}</td>
-            <td class="actions">
-              <button class="edit" onclick="editarProduto(${index})">Editar</button>
-              <button class="delete" onclick="excluirProduto(${index})">Excluir</button>
-            </td>
+          criarCelula(tr, p.nome);
+          criarCelula(tr, p.categoria);
+          criarCelula(tr, p.fornecedor);
+          criarCelula(tr, p.lote);
+          criarCelula(tr, (p.validade || '').substring(0, 10));
+          criarCelula(tr, p.quantidade);
+
+          const tdAcoes = document.createElement('td');
+          tdAcoes.classList.add('actions');
+          tdAcoes.innerHTML = `
+            <button class="view" onclick="visualizarProduto(${p.id})">Visualizar</button>
           `;
+          tr.appendChild(tdAcoes);
+
           tabela.appendChild(tr);
         });
     }
 
-    // Cadastrar ou editar produto
-    form.addEventListener('submit', e => {
-      e.preventDefault();
+    async function carregarProdutos() {
+      try {
+        const resposta = await fetch(API_URL);
+        if (!resposta.ok) {
+          throw new Error('Não foi possível carregar os produtos.');
+        }
+        const resultado = await resposta.json();
+        if (!resultado.success) {
+          throw new Error(resultado.error || 'Erro ao buscar produtos.');
+        }
 
-      const novoProduto = {
+        produtos = resultado.produtos || [];
+        renderTabela(buscarInput.value);
+      } catch (erro) {
+        alert(erro.message);
+      }
+    }
+
+    form.addEventListener('submit', async evento => {
+      evento.preventDefault();
+
+      const payload = {
         nome: form.nome.value,
         categoria: form.categoria.value,
         fornecedor: form.fornecedor.value,
         lote: form.lote.value,
         validade: form.validade.value,
-        quantidade: form.quantidade.value
+        quantidade: Number(form.quantidade.value)
       };
 
-      // Verifica duplicidade (mesmo nome + lote)
-      const duplicado = produtos.some(
-        (p, i) => p.nome === novoProduto.nome && p.lote === novoProduto.lote && i !== editIndex
-      );
-      if (duplicado) {
-        alert('Já existe um produto com este nome e lote.');
-        return;
-      }
+      try {
+        const resposta = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const resultado = await resposta.json();
 
-      if (editIndex !== null) {
-        produtos[editIndex] = novoProduto; // Atualiza produto existente
-        editIndex = null;
-      } else {
-        produtos.push(novoProduto); // Adiciona novo produto
-      }
+        if (!resposta.ok || !resultado.success) {
+          throw new Error(resultado.error || 'Erro ao salvar o produto.');
+        }
 
-      localStorage.setItem('produtos', JSON.stringify(produtos));
-      form.reset();
-      atualizarTabela();
+        form.reset();
+        await carregarProdutos();
+      } catch (erro) {
+        alert(erro.message);
+      }
     });
 
-    // Função para editar produto
-    function editarProduto(index) {
-      const p = produtos[index];
-      form.nome.value = p.nome;
-      form.categoria.value = p.categoria;
-      form.fornecedor.value = p.fornecedor;
-      form.lote.value = p.lote;
-      form.validade.value = p.validade;
-      form.quantidade.value = p.quantidade;
-      editIndex = index;
+    function visualizarProduto(id) {
+      window.location.href = `detalhes_produto.html?id=${id}`;
     }
 
-    // Função para excluir produto
-    function excluirProduto(index) {
-      if (confirm('Tem certeza que deseja excluir este produto?')) {
-        produtos.splice(index, 1);
-        localStorage.setItem('produtos', JSON.stringify(produtos));
-        atualizarTabela();
-      }
-    }
-
-    // Busca em tempo real
     buscarInput.addEventListener('input', e => {
-      atualizarTabela(e.target.value);
+      renderTabela(e.target.value);
     });
 
-    // Atualiza tabela ao carregar página
-    atualizarTabela();
+    carregarProdutos();
   </script>
 </body>
 </html>

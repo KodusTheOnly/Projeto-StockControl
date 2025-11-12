@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Detalhes do Produto</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f4f8;
+      margin: 0;
+      padding: 30px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+      margin-top: 0;
+      text-align: center;
+    }
+
+    .voltar {
+      display: inline-block;
+      margin-bottom: 10px;
+      color: #007bff;
+      text-decoration: none;
+    }
+
+    .voltar:hover {
+      text-decoration: underline;
+    }
+
+    .detalhes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+    }
+
+    .detalhe {
+      background: #f9fbff;
+      border: 1px solid #e1e6ef;
+      border-radius: 8px;
+      padding: 15px;
+    }
+
+    .detalhe span {
+      display: block;
+      font-size: 13px;
+      text-transform: uppercase;
+      color: #777;
+      margin-bottom: 6px;
+    }
+
+    .acoes {
+      display: flex;
+      gap: 10px;
+      margin: 25px 0 10px;
+    }
+
+    button {
+      border: none;
+      border-radius: 6px;
+      padding: 10px 18px;
+      font-size: 15px;
+      cursor: pointer;
+      color: #fff;
+    }
+
+    .btn-editar {
+      background: #ffc107;
+      color: #212529;
+    }
+
+    .btn-excluir {
+      background: #dc3545;
+    }
+
+    .btn-salvar {
+      background: #28a745;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    form {
+      margin-top: 10px;
+      display: none;
+    }
+
+    form.visible {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .status {
+      margin-bottom: 15px;
+      padding: 10px;
+      border-radius: 6px;
+      display: none;
+    }
+
+    .status.error {
+      background: #ffd7d7;
+      color: #8a1c1c;
+    }
+
+    .status.success {
+      background: #d8f5d0;
+      color: #205522;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="voltar" href="cadastro_produtos.html">&larr; Voltar</a>
+    <h1>Detalhes do Produto</h1>
+    <div id="status" class="status"></div>
+
+    <div id="dados-produto" class="detalhes-grid"></div>
+
+    <div class="acoes">
+      <button id="btn-editar" class="btn-editar">Editar</button>
+      <button id="btn-excluir" class="btn-excluir">Excluir</button>
+    </div>
+
+    <form id="form-editar">
+      <div>
+        <label for="nome">Nome</label>
+        <input type="text" id="nome" required>
+      </div>
+      <div>
+        <label for="categoria">Categoria</label>
+        <input type="text" id="categoria" required>
+      </div>
+      <div>
+        <label for="fornecedor">Fornecedor</label>
+        <input type="text" id="fornecedor" required>
+      </div>
+      <div>
+        <label for="lote">Lote</label>
+        <input type="text" id="lote" required>
+      </div>
+      <div>
+        <label for="validade">Validade</label>
+        <input type="date" id="validade" required>
+      </div>
+      <div>
+        <label for="quantidade">Quantidade</label>
+        <input type="number" id="quantidade" min="0" required>
+      </div>
+      <div style="grid-column: 1 / -1;">
+        <button type="submit" class="btn-salvar">Salvar Alterações</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const API_URL = 'produtos.php';
+    const statusBox = document.getElementById('status');
+    const dadosProdutoEl = document.getElementById('dados-produto');
+    const formEditar = document.getElementById('form-editar');
+    const btnEditar = document.getElementById('btn-editar');
+    const btnExcluir = document.getElementById('btn-excluir');
+
+    let produtoAtual = null;
+    let modoEdicao = false;
+
+    function obterIdDaUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+      return id ? Number(id) : null;
+    }
+
+    function mostrarStatus(mensagem, tipo = 'success') {
+      statusBox.textContent = mensagem;
+      statusBox.className = `status ${tipo}`;
+      statusBox.style.display = 'block';
+    }
+
+    function esconderStatus() {
+      statusBox.style.display = 'none';
+    }
+
+    function preencherDados(produto) {
+      dadosProdutoEl.innerHTML = '';
+      const pares = [
+        ['Nome', produto.nome],
+        ['Categoria', produto.categoria],
+        ['Fornecedor', produto.fornecedor],
+        ['Lote', produto.lote],
+        ['Validade', (produto.validade || '').substring(0, 10)],
+        ['Quantidade', produto.quantidade],
+        ['Criado em', formatarData(produto.criado_em)],
+        ['Atualizado em', formatarData(produto.atualizado_em)],
+      ];
+
+      pares.forEach(([titulo, valor]) => {
+        const div = document.createElement('div');
+        div.className = 'detalhe';
+        div.innerHTML = `<span>${titulo}</span>${valor ?? '-'}`;
+        dadosProdutoEl.appendChild(div);
+      });
+    }
+
+    function preencherFormulario(produto) {
+      formEditar.nome.value = produto.nome || '';
+      formEditar.categoria.value = produto.categoria || '';
+      formEditar.fornecedor.value = produto.fornecedor || '';
+      formEditar.lote.value = produto.lote || '';
+      formEditar.validade.value = (produto.validade || '').substring(0, 10);
+      formEditar.quantidade.value = produto.quantidade ?? 0;
+    }
+
+    function formatarData(dataIso) {
+      if (!dataIso) return '-';
+      const data = new Date(dataIso);
+      if (Number.isNaN(data.getTime())) return dataIso;
+      return data.toLocaleString('pt-BR');
+    }
+
+    async function carregarProduto() {
+      const id = obterIdDaUrl();
+      if (!id) {
+        mostrarStatus('ID do produto não informado.', 'error');
+        desabilitarAcoes();
+        return;
+      }
+
+      try {
+        esconderStatus();
+        const resposta = await fetch(`${API_URL}?id=${id}`);
+        const resultado = await resposta.json();
+        if (!resposta.ok || !resultado.success) {
+          throw new Error(resultado.error || 'Erro ao carregar o produto.');
+        }
+        produtoAtual = resultado.produto;
+        preencherDados(produtoAtual);
+        preencherFormulario(produtoAtual);
+      } catch (erro) {
+        mostrarStatus(erro.message, 'error');
+        desabilitarAcoes();
+      }
+    }
+
+    function desabilitarAcoes() {
+      btnEditar.disabled = true;
+      btnExcluir.disabled = true;
+      formEditar.querySelectorAll('input, button').forEach(el => el.disabled = true);
+    }
+
+    btnEditar.addEventListener('click', () => {
+      if (!produtoAtual) return;
+      modoEdicao = !modoEdicao;
+      formEditar.classList.toggle('visible', modoEdicao);
+      btnEditar.textContent = modoEdicao ? 'Cancelar' : 'Editar';
+      if (modoEdicao) {
+        preencherFormulario(produtoAtual);
+      } else {
+        esconderStatus();
+      }
+    });
+
+    btnExcluir.addEventListener('click', async () => {
+      if (!produtoAtual) return;
+      if (!confirm('Tem certeza que deseja excluir este produto?')) {
+        return;
+      }
+
+      try {
+        const resposta = await fetch(`${API_URL}?id=${produtoAtual.id}`, { method: 'DELETE' });
+        const resultado = await resposta.json();
+        if (!resposta.ok || !resultado.success) {
+          throw new Error(resultado.error || 'Erro ao excluir o produto.');
+        }
+        alert('Produto excluído com sucesso.');
+        window.location.href = 'cadastro_produtos.html';
+      } catch (erro) {
+        mostrarStatus(erro.message, 'error');
+      }
+    });
+
+    formEditar.addEventListener('submit', async evento => {
+      evento.preventDefault();
+      if (!produtoAtual) return;
+
+      const payload = {
+        nome: formEditar.nome.value,
+        categoria: formEditar.categoria.value,
+        fornecedor: formEditar.fornecedor.value,
+        lote: formEditar.lote.value,
+        validade: formEditar.validade.value,
+        quantidade: Number(formEditar.quantidade.value),
+      };
+
+      try {
+        const resposta = await fetch(`${API_URL}?id=${produtoAtual.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const resultado = await resposta.json();
+        if (!resposta.ok || !resultado.success) {
+          throw new Error(resultado.error || 'Erro ao salvar alterações.');
+        }
+
+        mostrarStatus('Produto atualizado com sucesso!');
+        modoEdicao = false;
+        formEditar.classList.remove('visible');
+        btnEditar.textContent = 'Editar';
+        await carregarProduto();
+      } catch (erro) {
+        mostrarStatus(erro.message, 'error');
+      }
+    });
+
+    carregarProduto();
+  </script>
+</body>
+</html>
