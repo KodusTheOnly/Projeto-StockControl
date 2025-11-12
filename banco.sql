@@ -1,6 +1,7 @@
 CREATE SCHEMA cadastro_usuarios;
 USE cadastro_usuarios;
 SELECT * FROM usuarios;
+USE estoque_produtos;
 CREATE TABLE usuarios (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   nome VARCHAR(120) NOT NULL,
@@ -24,14 +25,9 @@ CREATE TABLE senha_tokens (
   CONSTRAINT fk_tokens_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
     ON DELETE CASCADE
 );
-
 -- ================== ESTOQUE DE PRODUTOS ==================
-CREATE DATABASE IF NOT EXISTS estoque_produtos
-  DEFAULT CHARACTER SET utf8mb4
-  DEFAULT COLLATE utf8mb4_unicode_ci;
-USE estoque_produtos;
-
-CREATE TABLE IF NOT EXISTS produtos (
+CREATE SCHEMA estoque_produtos
+CREATE TABLE produtos (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   nome VARCHAR(120) NOT NULL,
   categoria VARCHAR(100) NOT NULL,
