@@ -24,3 +24,21 @@ CREATE TABLE senha_tokens (
   CONSTRAINT fk_tokens_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
     ON DELETE CASCADE
 );
+
+-- ================== ESTOQUE DE PRODUTOS ==================
+CREATE DATABASE estoque_produtos
+USE estoque_produtos;
+
+CREATE TABLE produtos (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  nome VARCHAR(120) NOT NULL,
+  categoria VARCHAR(100) NOT NULL,
+  fornecedor VARCHAR(160) NOT NULL,
+  lote VARCHAR(100) NOT NULL,
+  validade DATE NOT NULL,
+  quantidade INT UNSIGNED NOT NULL,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_produtos_nome_lote (nome, lote)
+);
