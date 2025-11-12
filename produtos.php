@@ -30,8 +30,12 @@ try {
             $payload = lerPayload();
             excluirProduto($conn, $payload);
             break;
+        case 'PATCH':
+            $payload = lerPayload();
+            atualizarQrCode($conn, $payload);
+            break;
         default:
-            header('Allow: GET, POST, PUT, DELETE');
+            header('Allow: GET, POST, PUT, DELETE, PATCH');
             responder(405, ['success' => false, 'error' => 'Método não suportado.']);
     }
 } catch (Throwable $e) {
@@ -117,7 +121,7 @@ function listarProdutos(mysqli $conn): void
     }
 
     $termo = filter_input(INPUT_GET, 'buscar', FILTER_SANITIZE_SPECIAL_CHARS) ?? '';
-    $sql = 'SELECT id, nome, categoria, fornecedor, lote, validade, quantidade, criado_em, atualizado_em FROM produtos';
+    $sql = 'SELECT id, nome, categoria, fornecedor, lote, validade, quantidade, qr_code_habilitado, criado_em, atualizado_em FROM produtos';
 
     if ($termo !== '') {
         $sql .= ' WHERE nome LIKE ? OR categoria LIKE ? OR fornecedor LIKE ? OR lote LIKE ?';
@@ -213,6 +217,32 @@ function excluirProduto(mysqli $conn, array $payload): void
     }
 
     responder(200, ['success' => true]);
+}
+
+function atualizarQrCode(mysqli $conn, array $payload): void
+{
+    $acao = $payload['acao'] ?? '';
+    if (!in_array($acao, ['gerar_qr', 'remover_qr'], true)) {
+        responder(400, ['success' => false, 'error' => 'Ação de QR Code inválida.']);
+    }
+
+    $id = extrairId($payload);
+    if ($id === null) {
+        responder(400, ['success' => false, 'error' => 'ID do produto não informado.']);
+    }
+
+    if (!produtoExiste($conn, $id)) {
+        responder(404, ['success' => false, 'error' => 'Produto não encontrado.']);
+    }
+
+    $habilitar = $acao === 'gerar_qr' ? 1 : 0;
+    $stmt = $conn->prepare('UPDATE produtos SET qr_code_habilitado = ? WHERE id = ?');
+    $stmt->bind_param('ii', $habilitar, $id);
+    if (!$stmt->execute()) {
+        responder(500, ['success' => false, 'error' => 'Não foi possível atualizar o QR Code.']);
+    }
+
+    responder(200, ['success' => true, 'qr_code_habilitado' => $habilitar]);
 }
 
 function garantirProdutoUnico(mysqli $conn, string $nome, string $lote, ?int $ignorarId = null): void

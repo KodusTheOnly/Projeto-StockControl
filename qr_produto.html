@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>QR Code do Produto</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f4f8;
+      margin: 0;
+      padding: 30px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 620px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+
+    .voltar {
+      display: inline-block;
+      margin-bottom: 15px;
+      color: #007bff;
+      text-decoration: none;
+    }
+
+    .voltar:hover {
+      text-decoration: underline;
+    }
+
+    h1 {
+      margin-top: 0;
+    }
+
+    .status {
+      display: none;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+    }
+
+    .status.error {
+      display: block;
+      background: #ffd7d7;
+      color: #8a1c1c;
+    }
+
+    .status.success {
+      display: block;
+      background: #d8f5d0;
+      color: #205522;
+    }
+
+    .info {
+      margin-bottom: 20px;
+    }
+
+    .info strong {
+      display: block;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .qr-wrapper {
+      margin: 20px auto;
+      padding: 20px;
+      border: 1px solid #e1e6ef;
+      border-radius: 8px;
+      display: inline-block;
+      background: #f9fbff;
+    }
+
+    #qr-code {
+      width: 220px;
+      height: 220px;
+      margin: 0 auto;
+    }
+
+    #qr-link {
+      margin-top: 12px;
+      display: none;
+      word-break: break-all;
+      color: #007bff;
+    }
+
+    .acoes {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    button {
+      border: none;
+      border-radius: 6px;
+      padding: 10px 18px;
+      font-size: 15px;
+      cursor: pointer;
+      color: #fff;
+      background: #dc3545;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a id="link-detalhes" class="voltar" href="detalhes_produto.html">&larr; Voltar</a>
+    <h1>QR Code do Produto</h1>
+    <div id="status" class="status"></div>
+
+    <div class="info">
+      <h2 id="produto-nome">Produto</h2>
+      <strong id="produto-categoria"></strong>
+      <p><strong>Lote:</strong> <span id="produto-lote">-</span></p>
+      <p><strong>Validade:</strong> <span id="produto-validade">-</span></p>
+    </div>
+
+    <div class="qr-wrapper">
+      <div id="qr-code"></div>
+      <a id="qr-link" target="_blank" rel="noopener">Gerando link...</a>
+    </div>
+
+    <div class="acoes">
+      <button id="btn-remover">Excluir QR Code</button>
+    </div>
+  </div>
+
+  <script src="assets/js/qrcode.min.js"></script>
+  <script>
+    const API_URL = 'produtos.php';
+    const statusBox = document.getElementById('status');
+    const qrContainer = document.getElementById('qr-code');
+    const qrLink = document.getElementById('qr-link');
+    const btnRemover = document.getElementById('btn-remover');
+    const linkDetalhes = document.getElementById('link-detalhes');
+    const nomeEl = document.getElementById('produto-nome');
+    const categoriaEl = document.getElementById('produto-categoria');
+    const loteEl = document.getElementById('produto-lote');
+    const validadeEl = document.getElementById('produto-validade');
+
+    let produtoAtual = null;
+
+    function obterId() {
+      const params = new URLSearchParams(window.location.search);
+      const id = Number(params.get('id'));
+      return Number.isFinite(id) && id > 0 ? id : null;
+    }
+
+    function mostrarStatus(mensagem, tipo = 'success') {
+      statusBox.textContent = mensagem;
+      statusBox.className = `status ${tipo}`;
+    }
+
+    function limparStatus() {
+      statusBox.textContent = '';
+      statusBox.className = 'status';
+    }
+
+    function montarUrlDetalhes(id) {
+      const url = new URL(window.location.href);
+      url.search = '';
+      url.hash = '';
+      url.pathname = url.pathname.replace(/qr_produto\.html$/, 'detalhes_produto.html');
+      url.searchParams.set('id', id);
+      return url.toString();
+    }
+
+    function preencherInfo(produto) {
+      nomeEl.textContent = produto.nome || 'Produto';
+      categoriaEl.textContent = produto.categoria ? `Categoria: ${produto.categoria}` : '';
+      loteEl.textContent = produto.lote || '-';
+      validadeEl.textContent = (produto.validade || '').substring(0, 10) || '-';
+    }
+
+    function gerarLinkProduto(id) {
+      const url = new URL(window.location.href);
+      url.pathname = url.pathname.replace(/qr_produto\.html$/, 'detalhes_produto.html');
+      url.search = `?id=${id}`;
+      url.hash = '';
+      return url.toString();
+    }
+
+    function gerarQrCode(url) {
+      qrContainer.innerHTML = '';
+      new QRCode(qrContainer, {
+        text: url,
+        width: 220,
+        height: 220,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+      });
+      qrLink.textContent = url;
+      qrLink.href = url;
+    }
+
+    async function carregarProduto() {
+      const id = obterId();
+      if (!id) {
+        mostrarStatus('ID do produto não informado.', 'error');
+        btnRemover.disabled = true;
+        return;
+      }
+
+      linkDetalhes.href = montarUrlDetalhes(id);
+      try {
+        limparStatus();
+        const resposta = await fetch(`${API_URL}?id=${id}`);
+        const resultado = await resposta.json();
+        if (!resposta.ok || !resultado.success) {
+          throw new Error(resultado.error || 'Erro ao carregar o produto.');
+        }
+
+        produtoAtual = resultado.produto;
+        preencherInfo(produtoAtual);
+        if (Number(produtoAtual.qr_code_habilitado) !== 1) {
+          mostrarStatus('QR Code ainda não foi gerado para este produto.', 'error');
+          btnRemover.disabled = true;
+          qrContainer.innerHTML = '';
+          qrLink.textContent = '';
+          return;
+        }
+
+        const url = gerarLinkProduto(produtoAtual.id);
+        gerarQrCode(url);
+        btnRemover.disabled = false;
+      } catch (erro) {
+        mostrarStatus(erro.message, 'error');
+        btnRemover.disabled = true;
+      }
+    }
+
+    btnRemover.addEventListener('click', async () => {
+      if (!produtoAtual) return;
+      if (!confirm('Excluir o QR Code deste produto?')) {
+        return;
+      }
+
+      try {
+        const resposta = await fetch(`${API_URL}?id=${produtoAtual.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ acao: 'remover_qr' })
+        });
+        const resultado = await resposta.json();
+        if (!resposta.ok || !resultado.success) {
+          throw new Error(resultado.error || 'Não foi possível excluir o QR Code.');
+        }
+        alert('QR Code removido. Você será redirecionado.');
+        window.location.href = montarUrlDetalhes(produtoAtual.id);
+      } catch (erro) {
+        mostrarStatus(erro.message, 'error');
+      }
+    });
+
+    carregarProduto();
+  </script>
+</body>
+</html>

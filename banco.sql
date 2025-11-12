@@ -26,10 +26,12 @@ CREATE TABLE senha_tokens (
 );
 
 -- ================== ESTOQUE DE PRODUTOS ==================
-CREATE DATABASE estoque_produtos
+CREATE DATABASE IF NOT EXISTS estoque_produtos
+  DEFAULT CHARACTER SET utf8mb4
+  DEFAULT COLLATE utf8mb4_unicode_ci;
 USE estoque_produtos;
 
-CREATE TABLE produtos (
+CREATE TABLE IF NOT EXISTS produtos (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   nome VARCHAR(120) NOT NULL,
   categoria VARCHAR(100) NOT NULL,
@@ -37,6 +39,7 @@ CREATE TABLE produtos (
   lote VARCHAR(100) NOT NULL,
   validade DATE NOT NULL,
   quantidade INT UNSIGNED NOT NULL,
+  qr_code_habilitado TINYINT(1) NOT NULL DEFAULT 0,
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),

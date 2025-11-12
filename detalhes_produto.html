@@ -86,6 +86,10 @@
       background: #dc3545;
     }
 
+    .btn-qr {
+      background: #17a2b8;
+    }
+
     .btn-salvar {
       background: #28a745;
       width: 100%;
@@ -143,6 +147,7 @@
     <div id="dados-produto" class="detalhes-grid"></div>
 
     <div class="acoes">
+      <button id="btn-qr" class="btn-qr">Gerar QR Code</button>
       <button id="btn-editar" class="btn-editar">Editar</button>
       <button id="btn-excluir" class="btn-excluir">Excluir</button>
     </div>
@@ -183,6 +188,7 @@
     const statusBox = document.getElementById('status');
     const dadosProdutoEl = document.getElementById('dados-produto');
     const formEditar = document.getElementById('form-editar');
+    const btnQr = document.getElementById('btn-qr');
     const btnEditar = document.getElementById('btn-editar');
     const btnExcluir = document.getElementById('btn-excluir');
 
@@ -260,6 +266,7 @@
         produtoAtual = resultado.produto;
         preencherDados(produtoAtual);
         preencherFormulario(produtoAtual);
+        atualizarEstadoQr();
       } catch (erro) {
         mostrarStatus(erro.message, 'error');
         desabilitarAcoes();
@@ -267,10 +274,42 @@
     }
 
     function desabilitarAcoes() {
+      btnQr.disabled = true;
       btnEditar.disabled = true;
       btnExcluir.disabled = true;
       formEditar.querySelectorAll('input, button').forEach(el => el.disabled = true);
     }
+
+    function atualizarEstadoQr() {
+      if (!btnQr) return;
+      if (!produtoAtual) {
+        btnQr.textContent = 'Gerar QR Code';
+        btnQr.disabled = true;
+        return;
+      }
+
+      btnQr.disabled = false;
+      const habilitado = Number(produtoAtual.qr_code_habilitado) === 1;
+      btnQr.textContent = habilitado ? 'Visualizar QR Code' : 'Gerar QR Code';
+    }
+
+    btnQr.addEventListener('click', async () => {
+      if (!produtoAtual) return;
+      const habilitado = Number(produtoAtual.qr_code_habilitado) === 1;
+
+      if (habilitado) {
+        window.location.href = `qr_produto.html?id=${produtoAtual.id}`;
+        return;
+      }
+
+      try {
+        await enviarAcaoQr('gerar_qr');
+        await carregarProduto();
+        mostrarStatus('QR Code gerado com sucesso!');
+      } catch (erro) {
+        mostrarStatus(erro.message, 'error');
+      }
+    });
 
     btnEditar.addEventListener('click', () => {
       if (!produtoAtual) return;
@@ -336,6 +375,20 @@
         mostrarStatus(erro.message, 'error');
       }
     });
+
+    async function enviarAcaoQr(acao) {
+      const resposta = await fetch(`${API_URL}?id=${produtoAtual.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ acao })
+      });
+      const resultado = await resposta.json();
+      if (!resposta.ok || !resultado.success) {
+        throw new Error(resultado.error || 'Não foi possível atualizar o QR Code.');
+      }
+      produtoAtual.qr_code_habilitado = resultado.qr_code_habilitado;
+      atualizarEstadoQr();
+    }
 
     carregarProduto();
   </script>
