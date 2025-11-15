@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+// RF03 e RF04 - API REST para gestão de produtos e lotes
 header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/conexao_produtos.php';
@@ -15,22 +16,22 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 try {
     switch ($method) {
-        case 'GET':
+        case 'GET':     // RF03.2 - Consultar produtos
             listarProdutos($conn);
             break;
-        case 'POST':
+        case 'POST':    // RF03.1 - Cadastrar produto/lote
             $payload = lerPayload();
             criarProduto($conn, $payload);
             break;
-        case 'PUT':
+        case 'PUT':     // RF03.3 - Editar produto/lote
             $payload = lerPayload();
             atualizarProduto($conn, $payload);
             break;
-        case 'DELETE':
+        case 'DELETE':  // RF03.4 - Excluir produto/lote
             $payload = lerPayload();
             excluirProduto($conn, $payload);
             break;
-        case 'PATCH':
+        case 'PATCH':   // RF04 - Gerenciar QR Code
             $payload = lerPayload();
             atualizarQrCode($conn, $payload);
             break;
@@ -46,6 +47,7 @@ try {
     }
 }
 
+// Lê e interpreta o corpo da requisição
 function lerPayload(): array
 {
     $raw = file_get_contents('php://input');
@@ -62,6 +64,7 @@ function lerPayload(): array
     return $dados;
 }
 
+// Valida e normaliza dados do produto/lote
 function normalizarProduto(array $dados): array
 {
     $campos = [
@@ -85,10 +88,12 @@ function normalizarProduto(array $dados): array
         $limpos[$campo] = $valor;
     }
 
+    // Valida formato da data
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $limpos['validade'])) {
         responder(400, ['success' => false, 'error' => 'Informe a validade no formato AAAA-MM-DD.']);
     }
 
+    // Valida quantidade
     $quantidade = filter_var($limpos['quantidade'], FILTER_VALIDATE_INT);
     if ($quantidade === false || $quantidade < 0) {
         responder(400, ['success' => false, 'error' => 'Quantidade deve ser um número inteiro maior ou igual a zero.']);
@@ -98,11 +103,13 @@ function normalizarProduto(array $dados): array
     return $limpos;
 }
 
+// Lista produtos (todos ou específico por ID)
 function listarProdutos(mysqli $conn): void
 {
     $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+    
     if ($id) {
-        // Busca produto específico com seus lotes
+        // Busca produto específico com quantidade total dos lotes
         $stmt = $conn->prepare('
             SELECT p.*, 
                    (SELECT SUM(l.quantidade) FROM lotes l WHERE l.produto_id = p.id) as quantidade_total
@@ -118,7 +125,7 @@ function listarProdutos(mysqli $conn): void
             responder(404, ['success' => false, 'error' => 'Produto não encontrado.']);
         }
 
-        // Busca os lotes deste produto
+        // Busca todos os lotes deste produto
         $stmt_lotes = $conn->prepare('
             SELECT id, lote, fornecedor, validade, quantidade, criado_em, atualizado_em 
             FROM lotes 
@@ -132,7 +139,7 @@ function listarProdutos(mysqli $conn): void
         responder(200, ['success' => true, 'produto' => $produto]);
     }
 
-    // Lista todos os produtos com quantidade total
+    // Lista todos os produtos com agregações
     $termo = filter_input(INPUT_GET, 'buscar', FILTER_SANITIZE_SPECIAL_CHARS) ?? '';
     $sql = '
         SELECT p.id, p.nome, p.categoria, p.fornecedor_padrao, p.qr_code_habilitado,
@@ -160,6 +167,7 @@ function listarProdutos(mysqli $conn): void
     responder(200, ['success' => true, 'produtos' => $produtos]);
 }
 
+// Cria produto e/ou adiciona novo lote
 function criarProduto(mysqli $conn, array $payload): void
 {
     $dados = normalizarProduto($payload);
@@ -167,17 +175,17 @@ function criarProduto(mysqli $conn, array $payload): void
     $conn->begin_transaction();
     
     try {
-        // Verifica se produto já existe
+        // Verifica se produto já existe pelo nome
         $stmt_check = $conn->prepare('SELECT id FROM produtos WHERE nome = ? LIMIT 1');
         $stmt_check->bind_param('s', $dados['nome']);
         $stmt_check->execute();
         $resultado = $stmt_check->get_result();
         
         if ($resultado->num_rows > 0) {
-            // Produto já existe, apenas adiciona novo lote
+            // Produto existe, adiciona apenas novo lote
             $produto_id = $resultado->fetch_assoc()['id'];
             
-            // Verifica se já existe lote com mesmo número para este produto
+            // Verifica se já existe lote com mesmo número
             $stmt_lote_check = $conn->prepare('SELECT id FROM lotes WHERE produto_id = ? AND lote = ? LIMIT 1');
             $stmt_lote_check->bind_param('is', $produto_id, $dados['lote']);
             $stmt_lote_check->execute();
@@ -220,6 +228,7 @@ function criarProduto(mysqli $conn, array $payload): void
     }
 }
 
+// Atualiza produto e/ou lote
 function atualizarProduto(mysqli $conn, array $payload): void
 {
     $id = extrairId($payload);
@@ -236,7 +245,7 @@ function atualizarProduto(mysqli $conn, array $payload): void
     $conn->begin_transaction();
     
     try {
-        // Atualiza informações do produto
+        // Atualiza informações gerais do produto
         $stmt_produto = $conn->prepare('
             UPDATE produtos 
             SET nome = ?, categoria = ?, fornecedor_padrao = ? 
@@ -248,7 +257,7 @@ function atualizarProduto(mysqli $conn, array $payload): void
             throw new Exception('Não foi possível atualizar o produto.');
         }
         
-        // Se veio lote_id no payload, atualiza o lote específico
+        // Se veio lote_id, atualiza o lote específico
         if (isset($payload['lote_id'])) {
             $lote_id = filter_var($payload['lote_id'], FILTER_VALIDATE_INT);
             if ($lote_id) {
@@ -274,6 +283,7 @@ function atualizarProduto(mysqli $conn, array $payload): void
     }
 }
 
+// Exclui produto ou lote específico
 function excluirProduto(mysqli $conn, array $payload): void
 {
     $id = extrairId($payload);
@@ -297,7 +307,7 @@ function excluirProduto(mysqli $conn, array $payload): void
         }
     }
 
-    // Senão, exclui o produto inteiro (cascade vai excluir os lotes)
+    // Senão, exclui o produto (CASCADE exclui os lotes automaticamente)
     $stmt = $conn->prepare('DELETE FROM produtos WHERE id = ?');
     $stmt->bind_param('i', $id);
     $stmt->execute();
@@ -309,6 +319,7 @@ function excluirProduto(mysqli $conn, array $payload): void
     responder(200, ['success' => true]);
 }
 
+// RF04 - Habilita/desabilita QR Code do produto
 function atualizarQrCode(mysqli $conn, array $payload): void
 {
     $acao = $payload['acao'] ?? '';
@@ -335,6 +346,7 @@ function atualizarQrCode(mysqli $conn, array $payload): void
     responder(200, ['success' => true, 'qr_code_habilitado' => $habilitar]);
 }
 
+// Verifica se produto existe
 function produtoExiste(mysqli $conn, int $id): bool
 {
     $stmt = $conn->prepare('SELECT id FROM produtos WHERE id = ? LIMIT 1');
@@ -343,6 +355,7 @@ function produtoExiste(mysqli $conn, int $id): bool
     return $stmt->get_result()->num_rows > 0;
 }
 
+// Extrai ID da query string ou payload
 function extrairId(array $payload): ?int
 {
     $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
@@ -360,6 +373,7 @@ function extrairId(array $payload): ?int
     return null;
 }
 
+// Envia resposta JSON e finaliza execução
 function responder(int $status, array $payload): void
 {
     http_response_code($status);

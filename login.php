@@ -1,23 +1,28 @@
 <?php
-// Processamento do Login
-include_once 'conexao.php'; // Conexão banco
-if (session_status() !== PHP_SESSION_ACTIVE) session_start(); // sessão do usuario
+// RF02.1 - Autenticação de usuário
+include_once 'conexao.php';
+if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 
-$email = trim($_POST['email'] ?? ''); /* lê email e senha*/
-$senha = $_POST['senha'] ?? ''; 
+// Captura credenciais do formulário
+$email = trim($_POST['email'] ?? '');
+$senha = $_POST['senha'] ?? '';
 
+// Validação: campos obrigatórios
 if ($email === '' || $senha === '') {
   echo "<script>alert('Informe e-mail e senha');history.back();</script>";
   exit;
-} // campo vazio -> erro
+}
 
+// Busca usuário no banco
 $stmt = $conn->prepare("SELECT id, nome, email, senha_hash, perfil FROM usuarios WHERE email = ?");
 $stmt->bind_param('s', $email);
 $stmt->execute();
 $res = $stmt->get_result();
-$user = $res->fetch_assoc(); // consulta email banco de dados
+$user = $res->fetch_assoc();
 
-if ($user && password_verify($senha, $user['senha_hash'])) { // usuario existe?
+// Verifica credenciais
+if ($user && password_verify($senha, $user['senha_hash'])) {
+  // Cria sessão do usuário
   session_regenerate_id(true);
   $_SESSION['user'] = [
     'id'     => (int)$user['id'],
@@ -25,8 +30,10 @@ if ($user && password_verify($senha, $user['senha_hash'])) { // usuario existe?
     'email'  => $user['email'],
     'perfil' => $user['perfil'],
   ];
-  header('Location: cadastro_produtos.html'); // redireciona para a tela de produtos
+  
+  // Redireciona para área de produtos
+  header('Location: cadastro_produtos.html');
   exit;
 }
 
-echo "<script>alert('Credenciais inválidas');history.back();</script>"; // msg erro 
+echo "<script>alert('Credenciais inválidas');history.back();</script>";

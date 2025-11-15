@@ -1,30 +1,34 @@
 <?php
-// conexao banco
+// RF01.2 - Cadastro de novo usuário
 include_once("conexao.php");
 
-// leitura do formulário
+// Captura dados do formulário
 $nome  = isset($_POST["nome"])  ? trim($_POST["nome"])  : "";
 $email = isset($_POST["email"]) ? trim($_POST["email"]) : "";
 $senha = isset($_POST["senha"]) ? $_POST["senha"] : "";
-// validação
+
+// Validação: campos obrigatórios
 if ($nome === "" || $email === "" || $senha === "") {
     echo "<script>alert('Preencha todos os campos');history.back();</script>";
     exit;
 }
-// msg erro validação
+
+// Validação: formato de e-mail
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     echo "<script>alert('E-mail inválido');history.back();</script>";
     exit;
 }
-// msg erro minimo 6 caracteres
+
+// Validação: senha mínima de 6 caracteres
 if (strlen($senha) < 6) {
     echo "<script>alert('A senha precisa ter pelo menos 6 caracteres');history.back();</script>";
     exit;
 }
-// criptografa senha
+
+// Criptografa a senha antes de salvar
 $senha_hash = password_hash($senha, PASSWORD_DEFAULT);
 
-// insere no banco de dados
+// Insere usuário no banco
 $sql = "INSERT INTO usuarios (nome, email, senha_hash) VALUES (?, ?, ?)";
 $stmt = $conn->prepare($sql);
 if(!$stmt){
@@ -32,13 +36,11 @@ if(!$stmt){
     exit;
 }
 $stmt->bind_param("sss", $nome, $email, $senha_hash);
-// Executa
+
 if ($stmt->execute()) {
     echo "<script>alert('Conta criada com sucesso!');window.location.href='login.html';</script>";
-
-// msg de erro
 } else {
-    
+    // Verifica se o e-mail já existe (código de erro 1062)
     if ($conn->errno === 1062) {
         echo "<script>alert('Este e-mail já está cadastrado');history.back();</script>";
     } else {

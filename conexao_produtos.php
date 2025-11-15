@@ -1,5 +1,5 @@
 <?php
-// Conexão dedicada ao banco estoque_produtos
+// Conexão dedicada para operações com produtos e lotes
 if (!defined('DB_PROD_HOST')) {
     define('DB_PROD_HOST', 'localhost');
     define('DB_PROD_PORT', '3307');
@@ -8,11 +8,7 @@ if (!defined('DB_PROD_HOST')) {
     define('DB_PROD_NAME', 'StockControl');
 }
 
-/**
- * Retorna uma conexão ativa com o banco estoque_produtos.
- *
- * @throws RuntimeException quando a conexão falha.
- */
+// Retorna conexão ativa com o banco StockControl
 function conectarEstoque(): mysqli
 {
     $conn = new mysqli(DB_PROD_HOST, DB_PROD_USER, DB_PROD_PASS, DB_PROD_NAME, DB_PROD_PORT);
