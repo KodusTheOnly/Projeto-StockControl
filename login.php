@@ -25,7 +25,6 @@ if ($user && password_verify($senha, $user['senha_hash'])) { // usuario existe?
     'email'  => $user['email'],
     'perfil' => $user['perfil'],
   ];
-  //! AJUSTAR DEPOIS - AQUI É A PAGINA ONDE VOU MANDAR O USUÁRIO DEPOIS DO LOGIN DAR CERTO
   header('Location: cadastro_produtos.html'); // redireciona para a tela de produtos
   exit;
 }

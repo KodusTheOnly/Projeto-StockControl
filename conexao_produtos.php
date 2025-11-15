@@ -5,7 +5,7 @@ if (!defined('DB_PROD_HOST')) {
     define('DB_PROD_PORT', '3307');
     define('DB_PROD_USER', 'root');
     define('DB_PROD_PASS', '');
-    define('DB_PROD_NAME', 'estoque_produtos');
+    define('DB_PROD_NAME', 'StockControl');
 }
 
 /**

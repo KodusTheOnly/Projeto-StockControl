@@ -46,9 +46,6 @@ try {
     }
 }
 
-/**
- * Lê e interpreta o corpo da requisição.
- */
 function lerPayload(): array
 {
     $raw = file_get_contents('php://input');
@@ -65,9 +62,6 @@ function lerPayload(): array
     return $dados;
 }
 
-/**
- * Retorna os dados do produto normalizados e validados.
- */
 function normalizarProduto(array $dados): array
 {
     $campos = [
@@ -108,7 +102,14 @@ function listarProdutos(mysqli $conn): void
 {
     $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
     if ($id) {
-        $stmt = $conn->prepare('SELECT * FROM produtos WHERE id = ? LIMIT 1');
+        // Busca produto específico com seus lotes
+        $stmt = $conn->prepare('
+            SELECT p.*, 
+                   (SELECT SUM(l.quantidade) FROM lotes l WHERE l.produto_id = p.id) as quantidade_total
+            FROM produtos p 
+            WHERE p.id = ? 
+            LIMIT 1
+        ');
         $stmt->bind_param('i', $id);
         $stmt->execute();
         $produto = $stmt->get_result()->fetch_assoc();
@@ -117,20 +118,38 @@ function listarProdutos(mysqli $conn): void
             responder(404, ['success' => false, 'error' => 'Produto não encontrado.']);
         }
 
+        // Busca os lotes deste produto
+        $stmt_lotes = $conn->prepare('
+            SELECT id, lote, fornecedor, validade, quantidade, criado_em, atualizado_em 
+            FROM lotes 
+            WHERE produto_id = ? 
+            ORDER BY validade ASC
+        ');
+        $stmt_lotes->bind_param('i', $id);
+        $stmt_lotes->execute();
+        $produto['lotes'] = $stmt_lotes->get_result()->fetch_all(MYSQLI_ASSOC);
+
         responder(200, ['success' => true, 'produto' => $produto]);
     }
 
+    // Lista todos os produtos com quantidade total
     $termo = filter_input(INPUT_GET, 'buscar', FILTER_SANITIZE_SPECIAL_CHARS) ?? '';
-    $sql = 'SELECT id, nome, categoria, fornecedor, lote, validade, quantidade, qr_code_habilitado, criado_em, atualizado_em FROM produtos';
+    $sql = '
+        SELECT p.id, p.nome, p.categoria, p.fornecedor_padrao, p.qr_code_habilitado,
+               p.criado_em, p.atualizado_em,
+               (SELECT SUM(l.quantidade) FROM lotes l WHERE l.produto_id = p.id) as quantidade_total,
+               (SELECT MIN(l.validade) FROM lotes l WHERE l.produto_id = p.id) as proxima_validade
+        FROM produtos p
+    ';
 
     if ($termo !== '') {
-        $sql .= ' WHERE nome LIKE ? OR categoria LIKE ? OR fornecedor LIKE ? OR lote LIKE ?';
-        $sql .= ' ORDER BY criado_em DESC';
+        $sql .= ' WHERE p.nome LIKE ? OR p.categoria LIKE ? OR p.fornecedor_padrao LIKE ?';
+        $sql .= ' ORDER BY p.criado_em DESC';
         $like = '%' . $termo . '%';
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param('ssss', $like, $like, $like, $like);
+        $stmt->bind_param('sss', $like, $like, $like);
     } else {
-        $sql .= ' ORDER BY criado_em DESC';
+        $sql .= ' ORDER BY p.criado_em DESC';
         $stmt = $conn->prepare($sql);
     }
 
@@ -143,27 +162,62 @@ function listarProdutos(mysqli $conn): void
 
 function criarProduto(mysqli $conn, array $payload): void
 {
-    $produto = normalizarProduto($payload);
-    garantirProdutoUnico($conn, $produto['nome'], $produto['lote']);
-
-    $stmt = $conn->prepare(
-        'INSERT INTO produtos (nome, categoria, fornecedor, lote, validade, quantidade) VALUES (?, ?, ?, ?, ?, ?)'
-    );
-    $stmt->bind_param(
-        'sssssi',
-        $produto['nome'],
-        $produto['categoria'],
-        $produto['fornecedor'],
-        $produto['lote'],
-        $produto['validade'],
-        $produto['quantidade']
-    );
-
-    if (!$stmt->execute()) {
-        responder(500, ['success' => false, 'error' => 'Não foi possível salvar o produto.']);
+    $dados = normalizarProduto($payload);
+    
+    $conn->begin_transaction();
+    
+    try {
+        // Verifica se produto já existe
+        $stmt_check = $conn->prepare('SELECT id FROM produtos WHERE nome = ? LIMIT 1');
+        $stmt_check->bind_param('s', $dados['nome']);
+        $stmt_check->execute();
+        $resultado = $stmt_check->get_result();
+        
+        if ($resultado->num_rows > 0) {
+            // Produto já existe, apenas adiciona novo lote
+            $produto_id = $resultado->fetch_assoc()['id'];
+            
+            // Verifica se já existe lote com mesmo número para este produto
+            $stmt_lote_check = $conn->prepare('SELECT id FROM lotes WHERE produto_id = ? AND lote = ? LIMIT 1');
+            $stmt_lote_check->bind_param('is', $produto_id, $dados['lote']);
+            $stmt_lote_check->execute();
+            if ($stmt_lote_check->get_result()->num_rows > 0) {
+                throw new Exception('Já existe um lote com este número para este produto.');
+            }
+            
+        } else {
+            // Cria novo produto
+            $stmt_produto = $conn->prepare('
+                INSERT INTO produtos (nome, categoria, fornecedor_padrao) 
+                VALUES (?, ?, ?)
+            ');
+            $stmt_produto->bind_param('sss', $dados['nome'], $dados['categoria'], $dados['fornecedor']);
+            
+            if (!$stmt_produto->execute()) {
+                throw new Exception('Não foi possível criar o produto.');
+            }
+            
+            $produto_id = $conn->insert_id;
+        }
+        
+        // Insere o lote
+        $stmt_lote = $conn->prepare('
+            INSERT INTO lotes (produto_id, lote, fornecedor, validade, quantidade) 
+            VALUES (?, ?, ?, ?, ?)
+        ');
+        $stmt_lote->bind_param('isssi', $produto_id, $dados['lote'], $dados['fornecedor'], $dados['validade'], $dados['quantidade']);
+        
+        if (!$stmt_lote->execute()) {
+            throw new Exception('Não foi possível adicionar o lote.');
+        }
+        
+        $conn->commit();
+        responder(201, ['success' => true, 'produto_id' => $produto_id, 'lote_id' => $conn->insert_id]);
+        
+    } catch (Exception $e) {
+        $conn->rollback();
+        responder(400, ['success' => false, 'error' => $e->getMessage()]);
     }
-
-    responder(201, ['success' => true, 'id' => $conn->insert_id]);
 }
 
 function atualizarProduto(mysqli $conn, array $payload): void
@@ -177,28 +231,47 @@ function atualizarProduto(mysqli $conn, array $payload): void
         responder(404, ['success' => false, 'error' => 'Produto não encontrado.']);
     }
 
-    $produto = normalizarProduto($payload);
-    garantirProdutoUnico($conn, $produto['nome'], $produto['lote'], $id);
+    $dados = normalizarProduto($payload);
 
-    $stmt = $conn->prepare(
-        'UPDATE produtos SET nome = ?, categoria = ?, fornecedor = ?, lote = ?, validade = ?, quantidade = ? WHERE id = ?'
-    );
-    $stmt->bind_param(
-        'sssssii',
-        $produto['nome'],
-        $produto['categoria'],
-        $produto['fornecedor'],
-        $produto['lote'],
-        $produto['validade'],
-        $produto['quantidade'],
-        $id
-    );
-
-    if (!$stmt->execute()) {
-        responder(500, ['success' => false, 'error' => 'Não foi possível atualizar o produto.']);
+    $conn->begin_transaction();
+    
+    try {
+        // Atualiza informações do produto
+        $stmt_produto = $conn->prepare('
+            UPDATE produtos 
+            SET nome = ?, categoria = ?, fornecedor_padrao = ? 
+            WHERE id = ?
+        ');
+        $stmt_produto->bind_param('sssi', $dados['nome'], $dados['categoria'], $dados['fornecedor'], $id);
+        
+        if (!$stmt_produto->execute()) {
+            throw new Exception('Não foi possível atualizar o produto.');
+        }
+        
+        // Se veio lote_id no payload, atualiza o lote específico
+        if (isset($payload['lote_id'])) {
+            $lote_id = filter_var($payload['lote_id'], FILTER_VALIDATE_INT);
+            if ($lote_id) {
+                $stmt_lote = $conn->prepare('
+                    UPDATE lotes 
+                    SET lote = ?, fornecedor = ?, validade = ?, quantidade = ? 
+                    WHERE id = ? AND produto_id = ?
+                ');
+                $stmt_lote->bind_param('sssiii', $dados['lote'], $dados['fornecedor'], $dados['validade'], $dados['quantidade'], $lote_id, $id);
+                
+                if (!$stmt_lote->execute()) {
+                    throw new Exception('Não foi possível atualizar o lote.');
+                }
+            }
+        }
+        
+        $conn->commit();
+        responder(200, ['success' => true]);
+        
+    } catch (Exception $e) {
+        $conn->rollback();
+        responder(400, ['success' => false, 'error' => $e->getMessage()]);
     }
-
-    responder(200, ['success' => true]);
 }
 
 function excluirProduto(mysqli $conn, array $payload): void
@@ -208,6 +281,23 @@ function excluirProduto(mysqli $conn, array $payload): void
         responder(400, ['success' => false, 'error' => 'ID do produto não informado.']);
     }
 
+    // Se veio lote_id, exclui apenas o lote
+    if (isset($payload['lote_id'])) {
+        $lote_id = filter_var($payload['lote_id'], FILTER_VALIDATE_INT);
+        if ($lote_id) {
+            $stmt = $conn->prepare('DELETE FROM lotes WHERE id = ? AND produto_id = ?');
+            $stmt->bind_param('ii', $lote_id, $id);
+            $stmt->execute();
+            
+            if ($stmt->affected_rows === 0) {
+                responder(404, ['success' => false, 'error' => 'Lote não encontrado.']);
+            }
+            
+            responder(200, ['success' => true]);
+        }
+    }
+
+    // Senão, exclui o produto inteiro (cascade vai excluir os lotes)
     $stmt = $conn->prepare('DELETE FROM produtos WHERE id = ?');
     $stmt->bind_param('i', $id);
     $stmt->execute();
@@ -243,22 +333,6 @@ function atualizarQrCode(mysqli $conn, array $payload): void
     }
 
     responder(200, ['success' => true, 'qr_code_habilitado' => $habilitar]);
-}
-
-function garantirProdutoUnico(mysqli $conn, string $nome, string $lote, ?int $ignorarId = null): void
-{
-    if ($ignorarId) {
-        $stmt = $conn->prepare('SELECT id FROM produtos WHERE nome = ? AND lote = ? AND id <> ? LIMIT 1');
-        $stmt->bind_param('ssi', $nome, $lote, $ignorarId);
-    } else {
-        $stmt = $conn->prepare('SELECT id FROM produtos WHERE nome = ? AND lote = ? LIMIT 1');
-        $stmt->bind_param('ss', $nome, $lote);
-    }
-
-    $stmt->execute();
-    if ($stmt->get_result()->num_rows > 0) {
-        responder(409, ['success' => false, 'error' => 'Já existe um produto com o mesmo nome e lote.']);
-    }
 }
 
 function produtoExiste(mysqli $conn, int $id): bool

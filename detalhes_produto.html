@@ -17,7 +17,7 @@
     }
 
     .container {
-      max-width: 720px;
+      max-width: 820px;
       margin: 0 auto;
       background: #fff;
       padding: 25px;
@@ -25,9 +25,15 @@
       box-shadow: 0 2px 10px rgba(0,0,0,0.08);
     }
 
-    h1 {
+    h1, h2 {
       margin-top: 0;
       text-align: center;
+    }
+
+    h2 {
+      font-size: 1.3rem;
+      margin-top: 30px;
+      color: #555;
     }
 
     .voltar {
@@ -45,6 +51,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 15px;
+      margin-bottom: 20px;
     }
 
     .detalhe {
@@ -113,7 +120,7 @@
       margin-bottom: 5px;
     }
 
-    input {
+    input, select {
       width: 100%;
       padding: 8px;
       border: 1px solid #ccc;
@@ -130,11 +137,49 @@
     .status.error {
       background: #ffd7d7;
       color: #8a1c1c;
+      display: block;
     }
 
     .status.success {
       background: #d8f5d0;
       color: #205522;
+      display: block;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background: #007bff;
+      color: white;
+      font-size: 14px;
+    }
+
+    tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+
+    td button {
+      padding: 5px 10px;
+      font-size: 13px;
+      margin: 0 2px;
+    }
+
+    .info-box {
+      background: #e7f3ff;
+      border-left: 4px solid #007bff;
+      padding: 12px;
+      margin: 20px 0;
+      border-radius: 5px;
     }
   </style>
 </head>
@@ -148,8 +193,8 @@
 
     <div class="acoes">
       <button id="btn-qr" class="btn-qr">Gerar QR Code</button>
-      <button id="btn-editar" class="btn-editar">Editar</button>
-      <button id="btn-excluir" class="btn-excluir">Excluir</button>
+      <button id="btn-editar" class="btn-editar">Editar Produto</button>
+      <button id="btn-excluir" class="btn-excluir">Excluir Produto</button>
     </div>
 
     <form id="form-editar">
@@ -159,28 +204,38 @@
       </div>
       <div>
         <label for="categoria">Categoria</label>
-        <input type="text" id="categoria" required>
+        <select id="categoria" required>
+          <option value="">Selecione</option>
+          <option>Bebidas</option>
+          <option>Higiene</option>
+          <option>Alimentos</option>
+          <option>Limpeza</option>
+        </select>
       </div>
       <div>
-        <label for="fornecedor">Fornecedor</label>
+        <label for="fornecedor">Fornecedor Padrão</label>
         <input type="text" id="fornecedor" required>
-      </div>
-      <div>
-        <label for="lote">Lote</label>
-        <input type="text" id="lote" required>
-      </div>
-      <div>
-        <label for="validade">Validade</label>
-        <input type="date" id="validade" required>
-      </div>
-      <div>
-        <label for="quantidade">Quantidade</label>
-        <input type="number" id="quantidade" min="0" required>
       </div>
       <div style="grid-column: 1 / -1;">
         <button type="submit" class="btn-salvar">Salvar Alterações</button>
       </div>
     </form>
+
+    <h2>Lotes em Estoque</h2>
+    <table id="tabela-lotes">
+      <thead>
+        <tr>
+          <th>Lote</th>
+          <th>Fornecedor</th> 
+          <th>Validade</th>
+          <th>Quantidade</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Lotes aparecem aqui -->
+      </tbody>
+    </table>
   </div>
 
   <script>
@@ -188,6 +243,7 @@
     const statusBox = document.getElementById('status');
     const dadosProdutoEl = document.getElementById('dados-produto');
     const formEditar = document.getElementById('form-editar');
+    const tabelaLotes = document.getElementById('tabela-lotes').querySelector('tbody');
     const btnQr = document.getElementById('btn-qr');
     const btnEditar = document.getElementById('btn-editar');
     const btnExcluir = document.getElementById('btn-excluir');
@@ -204,7 +260,6 @@
     function mostrarStatus(mensagem, tipo = 'success') {
       statusBox.textContent = mensagem;
       statusBox.className = `status ${tipo}`;
-      statusBox.style.display = 'block';
     }
 
     function esconderStatus() {
@@ -216,10 +271,8 @@
       const pares = [
         ['Nome', produto.nome],
         ['Categoria', produto.categoria],
-        ['Fornecedor', produto.fornecedor],
-        ['Lote', produto.lote],
-        ['Validade', (produto.validade || '').substring(0, 10)],
-        ['Quantidade', produto.quantidade],
+        ['Fornecedor Padrão', produto.fornecedor_padrao],
+        ['Quantidade Total', produto.quantidade_total || 0],
         ['Criado em', formatarData(produto.criado_em)],
         ['Atualizado em', formatarData(produto.atualizado_em)],
       ];
@@ -235,10 +288,32 @@
     function preencherFormulario(produto) {
       formEditar.nome.value = produto.nome || '';
       formEditar.categoria.value = produto.categoria || '';
-      formEditar.fornecedor.value = produto.fornecedor || '';
-      formEditar.lote.value = produto.lote || '';
-      formEditar.validade.value = (produto.validade || '').substring(0, 10);
-      formEditar.quantidade.value = produto.quantidade ?? 0;
+      formEditar.fornecedor.value = produto.fornecedor_padrao || '';
+    }
+
+    function preencherLotes(lotes) {
+      tabelaLotes.innerHTML = '';
+      
+      if (!lotes || lotes.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td colspan="5">Nenhum lote cadastrado</td>';
+        tabelaLotes.appendChild(tr);
+        return;
+      }
+
+      lotes.forEach(lote => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${lote.lote}</td>
+          <td>${lote.fornecedor}</td>
+          <td>${(lote.validade || '').substring(0, 10)}</td>
+          <td>${lote.quantidade}</td>
+          <td>
+            <button class="btn-excluir" onclick="excluirLote(${lote.id})">Excluir</button>
+          </td>
+        `;
+        tabelaLotes.appendChild(tr);
+      });
     }
 
     function formatarData(dataIso) {
@@ -266,6 +341,7 @@
         produtoAtual = resultado.produto;
         preencherDados(produtoAtual);
         preencherFormulario(produtoAtual);
+        preencherLotes(produtoAtual.lotes || []);
         atualizarEstadoQr();
       } catch (erro) {
         mostrarStatus(erro.message, 'error');
@@ -277,17 +353,11 @@
       btnQr.disabled = true;
       btnEditar.disabled = true;
       btnExcluir.disabled = true;
-      formEditar.querySelectorAll('input, button').forEach(el => el.disabled = true);
+      formEditar.querySelectorAll('input, button, select').forEach(el => el.disabled = true);
     }
 
     function atualizarEstadoQr() {
-      if (!btnQr) return;
-      if (!produtoAtual) {
-        btnQr.textContent = 'Gerar QR Code';
-        btnQr.disabled = true;
-        return;
-      }
-
+      if (!btnQr || !produtoAtual) return;
       btnQr.disabled = false;
       const habilitado = Number(produtoAtual.qr_code_habilitado) === 1;
       btnQr.textContent = habilitado ? 'Visualizar QR Code' : 'Gerar QR Code';
@@ -315,7 +385,7 @@
       if (!produtoAtual) return;
       modoEdicao = !modoEdicao;
       formEditar.classList.toggle('visible', modoEdicao);
-      btnEditar.textContent = modoEdicao ? 'Cancelar' : 'Editar';
+      btnEditar.textContent = modoEdicao ? 'Cancelar' : 'Editar Produto';
       if (modoEdicao) {
         preencherFormulario(produtoAtual);
       } else {
@@ -325,7 +395,7 @@
 
     btnExcluir.addEventListener('click', async () => {
       if (!produtoAtual) return;
-      if (!confirm('Tem certeza que deseja excluir este produto?')) {
+      if (!confirm('Tem certeza que deseja excluir este produto e TODOS os seus lotes?')) {
         return;
       }
 
@@ -350,9 +420,10 @@
         nome: formEditar.nome.value,
         categoria: formEditar.categoria.value,
         fornecedor: formEditar.fornecedor.value,
-        lote: formEditar.lote.value,
-        validade: formEditar.validade.value,
-        quantidade: Number(formEditar.quantidade.value),
+        // Mantém valores dos outros campos obrigatórios para não dar erro
+        lote: 'N/A',
+        validade: '2099-12-31',
+        quantidade: 0
       };
 
       try {
@@ -366,15 +437,48 @@
           throw new Error(resultado.error || 'Erro ao salvar alterações.');
         }
 
+        // Atualiza os dados localmente para exibição imediata
+        produtoAtual.nome = payload.nome;
+        produtoAtual.categoria = payload.categoria;
+        produtoAtual.fornecedor_padrao = payload.fornecedor;
+
+        // Atualiza a tela com os novos dados
+        preencherDados(produtoAtual);
+        
         mostrarStatus('Produto atualizado com sucesso!');
         modoEdicao = false;
         formEditar.classList.remove('visible');
-        btnEditar.textContent = 'Editar';
+        btnEditar.textContent = 'Editar Produto';
+        
+        // Recarrega do servidor para garantir sincronização
         await carregarProduto();
       } catch (erro) {
         mostrarStatus(erro.message, 'error');
       }
     });
+
+    async function excluirLote(loteId) {
+      if (!produtoAtual) return;
+      if (!confirm('Tem certeza que deseja excluir este lote?')) {
+        return;
+      }
+
+      try {
+        const resposta = await fetch(`${API_URL}?id=${produtoAtual.id}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lote_id: loteId })
+        });
+        const resultado = await resposta.json();
+        if (!resposta.ok || !resultado.success) {
+          throw new Error(resultado.error || 'Erro ao excluir o lote.');
+        }
+        mostrarStatus('Lote excluído com sucesso!');
+        await carregarProduto();
+      } catch (erro) {
+        mostrarStatus(erro.message, 'error');
+      }
+    }
 
     async function enviarAcaoQr(acao) {
       const resposta = await fetch(`${API_URL}?id=${produtoAtual.id}`, {

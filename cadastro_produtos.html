@@ -5,7 +5,6 @@
   <title>Gestão de Produtos (RF03.1)</title>
 
   <style>
-    /* ======== ESTILO GERAL ======== */
     body {
       font-family: Arial, sans-serif;
       background: #f2f4f8;
@@ -27,7 +26,6 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
-    /* ======== FORMULÁRIO ======== */
     form {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -63,7 +61,6 @@
       background: #0056b3;
     }
 
-    /* ======== TABELA DE CONSULTA ======== */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -109,14 +106,32 @@
       border: 1px solid #ccc;
       border-radius: 5px;
     }
+
+    .info-box {
+      background: #e7f3ff;
+      border-left: 4px solid #007bff;
+      padding: 12px;
+      margin-bottom: 20px;
+      border-radius: 5px;
+    }
+
+    .info-box p {
+      margin: 5px 0;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h2>Gestão de Produtos</h2>
+    <h2>Gestão de Produtos e Lotes</h2>
 
-    <!-- ======== FORMULÁRIO DE CADASTRO ======== -->
+    <div class="info-box">
+      <p><strong>Como funciona:</strong></p>
+      <p>• Se o produto já existe, será adicionado apenas um novo lote</p>
+      <p>• Se o produto não existe, será criado o produto e o primeiro lote</p>
+    </div>
+
     <form id="form-produto">
       <div>
         <label>Nome do Produto</label>
@@ -154,24 +169,21 @@
         <input type="number" id="quantidade" min="1" placeholder="Ex: 50" required>
       </div>
 
-      <button type="submit">Salvar Produto</button>
+      <button type="submit">Adicionar Produto/Lote</button>
     </form>
 
-    <!-- ======== CAMPO DE BUSCA ======== -->
     <div class="search-box">
       <input type="text" id="buscar" placeholder="Buscar produto...">
     </div>
 
-    <!-- ======== TABELA DE CONSULTA ======== -->
     <table id="tabela-produtos">
       <thead>
         <tr>
           <th>Nome</th>
           <th>Categoria</th>
-          <th>Fornecedor</th>
-          <th>Lote</th>
-          <th>Validade</th>
-          <th>Quantidade</th>
+          <th>Fornecedor Padrão</th>
+          <th>Qtd Total</th>
+          <th>Próxima Validade</th>
           <th>Ações</th>
         </tr>
       </thead>
@@ -181,7 +193,6 @@
     </table>
   </div>
 
-  <!-- ======== SCRIPT ======== -->
   <script>
     const form = document.getElementById('form-produto');
     const tabela = document.getElementById('tabela-produtos').querySelector('tbody');
@@ -192,7 +203,7 @@
 
     function criarCelula(tr, valor) {
       const td = document.createElement('td');
-      td.textContent = valor ?? '';
+      td.textContent = valor ?? '-';
       tr.appendChild(td);
     }
 
@@ -206,10 +217,9 @@
           const tr = document.createElement('tr');
           criarCelula(tr, p.nome);
           criarCelula(tr, p.categoria);
-          criarCelula(tr, p.fornecedor);
-          criarCelula(tr, p.lote);
-          criarCelula(tr, (p.validade || '').substring(0, 10));
-          criarCelula(tr, p.quantidade);
+          criarCelula(tr, p.fornecedor_padrao);
+          criarCelula(tr, p.quantidade_total || 0);
+          criarCelula(tr, (p.proxima_validade || '').substring(0, 10));
 
           const tdAcoes = document.createElement('td');
           tdAcoes.classList.add('actions');
@@ -261,9 +271,10 @@
         const resultado = await resposta.json();
 
         if (!resposta.ok || !resultado.success) {
-          throw new Error(resultado.error || 'Erro ao salvar o produto.');
+          throw new Error(resultado.error || 'Erro ao salvar o produto/lote.');
         }
 
+        alert('Produto/lote adicionado com sucesso!');
         form.reset();
         await carregarProdutos();
       } catch (erro) {
