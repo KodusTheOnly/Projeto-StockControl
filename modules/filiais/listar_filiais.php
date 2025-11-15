@@ -6,7 +6,7 @@ if (!isset($_SESSION['logado_filial'])) {
     exit;
 }
 
-include 'conexao.php';
+include '../../config/conexao.php';
 
 // Busca todas as filiais ordenadas por nome
 $stmt = $conn->prepare("SELECT id, nome, endereco, telefone, responsavel, criado_em FROM filiais ORDER BY nome ASC");

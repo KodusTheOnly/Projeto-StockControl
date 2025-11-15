@@ -6,7 +6,7 @@ if (!isset($_SESSION['logado_filial'])) {
     exit;
 }
 
-include 'conexao.php';
+include '../../config/conexao.php';
 
 $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 if (!$id) {

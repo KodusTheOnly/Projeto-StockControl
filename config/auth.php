@@ -10,7 +10,7 @@ function is_logged_in(): bool {
 // Redireciona para login se não estiver autenticado
 function require_login(): void {
   if (!is_logged_in()) {
-    header('Location: login.html');
+    header('Location: /Projeto-StockControl/modules/autenticacao/login.html');
     exit;
   }
 }

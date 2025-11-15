@@ -1,6 +1,6 @@
 <?php
 // RF02.1 - Autenticação de usuário
-include_once 'conexao.php';
+include_once '../../config/conexao.php';
 if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 
 // Captura credenciais do formulário
@@ -32,7 +32,7 @@ if ($user && password_verify($senha, $user['senha_hash'])) {
   ];
   
   // Redireciona para área de produtos
-  header('Location: cadastro_produtos.html');
+  header('Location: ../produtos/cadastro_produtos.html');
   exit;
 }
 

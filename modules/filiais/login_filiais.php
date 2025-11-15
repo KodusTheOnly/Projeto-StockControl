@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login Filiais</title>
-  <link rel="stylesheet" href="assets/css/login.css" />
+  <link rel="stylesheet" href="../../assets/css/login.css" />
 </head>
 <body>
 <div class="caixa-formulario">
@@ -19,7 +19,7 @@
     <button type="submit">Entrar</button>
   </form>
   <div class="secao-formulario">
-    <p><a href="login.html">← Voltar para login principal</a></p>
+    <p><a href="../autenticacao/login.html">← Voltar para login principal</a></p>
   </div>
 </div>
 </body>

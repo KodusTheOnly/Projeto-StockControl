@@ -163,7 +163,7 @@ if (!isset($_SESSION['logado_filial'])) {
     <ul>
       <li><a href="cadastrar_filial.php">Cadastrar Filial</a></li>
       <li><a href="listar_filiais.php">Listar Filiais</a></li>
-      <li><a href="login.html">Voltar ao Sistema Principal</a></li>
+      <li><a href="../autenticacao/login.html">Voltar ao Sistema Principal</a></li>
     </ul>
   </nav>
 

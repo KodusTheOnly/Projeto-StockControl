@@ -4,7 +4,7 @@ declare(strict_types=1);
 // RF03 e RF04 - API REST para gestão de produtos e lotes
 header('Content-Type: application/json; charset=utf-8');
 
-require_once __DIR__ . '/conexao_produtos.php';
+require_once __DIR__ . '/../../config/conexao_produtos.php';
 
 try {
     $conn = conectarEstoque();

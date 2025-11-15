@@ -1,6 +1,6 @@
 <?php
 // RF02.3 - Solicitação de recuperação de senha
-include_once 'conexao.php';
+include_once '../../config/conexao.php';
 
 // Captura e-mail do formulário
 $email = trim($_POST['email'] ?? '');

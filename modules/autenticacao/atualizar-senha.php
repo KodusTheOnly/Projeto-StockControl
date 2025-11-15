@@ -1,6 +1,6 @@
 <?php
 // RF02.3 - Processa atualização de senha
-include_once 'conexao.php';
+include_once '../../config/conexao.php';
 
 // Captura dados do formulário
 $token = $_POST['token'] ?? '';

@@ -1,6 +1,6 @@
 <?php
 // RF02.3 - Página de redefinição de senha
-include_once 'conexao.php';
+include_once '../../config/conexao.php';
 
 // Valida presença do token na URL
 $token = $_GET['token'] ?? '';
@@ -38,7 +38,7 @@ if (!$valido) {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Redefinir Senha</title>
-  <link rel="stylesheet" href="assets/css/login.css" />
+  <link rel="stylesheet" href="../../assets/css/login.css" />
 </head>
 <body>
 <div class="caixa-formulario">

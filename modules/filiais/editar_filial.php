@@ -1,40 +1,63 @@
 <?php
-// RF08.1 - Cadastrar Filial
+// RF08.3 - Alterar Filial
 session_start();
 if (!isset($_SESSION['logado_filial'])) {
     header("Location: login_filiais.php");
     exit;
 }
 
-include 'conexao.php';
+include '../../config/conexao.php';
+
+$id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+if (!$id) {
+    echo "<script>alert('ID inválido');window.location='listar_filiais.php';</script>";
+    exit;
+}
 
 $mensagem = '';
 $tipo_mensagem = '';
 
+// Processa atualização
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $nome = trim($_POST['nome'] ?? '');
     $endereco = trim($_POST['endereco'] ?? '');
     $telefone = trim($_POST['telefone'] ?? '');
     $responsavel = trim($_POST['responsavel'] ?? '');
 
-    // Validação
     if ($nome === '') {
         $mensagem = 'O nome da filial é obrigatório';
         $tipo_mensagem = 'error';
     } else {
-        // Usa prepared statement para evitar SQL injection
-        $stmt = $conn->prepare("INSERT INTO filiais (nome, endereco, telefone, responsavel) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param('ssss', $nome, $endereco, $telefone, $responsavel);
+        $stmt = $conn->prepare("UPDATE filiais SET nome = ?, endereco = ?, telefone = ?, responsavel = ? WHERE id = ?");
+        $stmt->bind_param('ssssi', $nome, $endereco, $telefone, $responsavel, $id);
 
         if ($stmt->execute()) {
-            $mensagem = 'Filial cadastrada com sucesso!';
-            $tipo_mensagem = 'success';
+            if ($stmt->affected_rows > 0) {
+                $mensagem = 'Filial atualizada com sucesso!';
+                $tipo_mensagem = 'success';
+            } else {
+                $mensagem = 'Nenhuma alteração foi feita';
+                $tipo_mensagem = 'info';
+            }
         } else {
-            $mensagem = 'Erro ao cadastrar filial: ' . $conn->error;
+            $mensagem = 'Erro ao atualizar filial: ' . $conn->error;
             $tipo_mensagem = 'error';
         }
         $stmt->close();
     }
+}
+
+// Busca dados da filial
+$stmt = $conn->prepare("SELECT nome, endereco, telefone, responsavel FROM filiais WHERE id = ?");
+$stmt->bind_param('i', $id);
+$stmt->execute();
+$result = $stmt->get_result();
+$filial = $result->fetch_assoc();
+$stmt->close();
+
+if (!$filial) {
+    echo "<script>alert('Filial não encontrada');window.location='listar_filiais.php';</script>";
+    exit;
 }
 ?>
 <!DOCTYPE html>
@@ -42,7 +65,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cadastrar Filial</title>
+  <title>Editar Filial</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -77,6 +100,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       color: #721c24;
       border: 1px solid #f5c6cb;
     }
+    .mensagem.info {
+      background-color: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
     form {
       display: flex;
       flex-direction: column;
@@ -93,8 +121,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       font-size: 14px;
     }
     button {
-      background-color: #0077cc;
-      color: white;
+      background-color: #ffc107;
+      color: #333;
       padding: 12px;
       border: none;
       border-radius: 4px;
@@ -103,7 +131,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       font-weight: bold;
     }
     button:hover {
-      background-color: #005fa3;
+      background-color: #e0a800;
     }
     .voltar {
       display: inline-block;
@@ -118,7 +146,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 </head>
 <body>
   <div class="container">
-    <h2>Cadastrar Nova Filial</h2>
+    <h2>Editar Filial</h2>
     
     <?php if ($mensagem): ?>
       <div class="mensagem <?php echo $tipo_mensagem; ?>">
@@ -129,28 +157,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <form method="POST">
       <div>
         <label for="nome">Nome da Filial *</label>
-        <input type="text" id="nome" name="nome" required>
+        <input type="text" id="nome" name="nome" value="<?php echo htmlspecialchars($filial['nome']); ?>" required>
       </div>
       
       <div>
         <label for="endereco">Endereço</label>
-        <input type="text" id="endereco" name="endereco">
+        <input type="text" id="endereco" name="endereco" value="<?php echo htmlspecialchars($filial['endereco'] ?? ''); ?>">
       </div>
       
       <div>
         <label for="telefone">Telefone</label>
-        <input type="text" id="telefone" name="telefone" placeholder="(00) 0000-0000">
+        <input type="text" id="telefone" name="telefone" value="<?php echo htmlspecialchars($filial['telefone'] ?? ''); ?>">
       </div>
       
       <div>
         <label for="responsavel">Responsável</label>
-        <input type="text" id="responsavel" name="responsavel">
+        <input type="text" id="responsavel" name="responsavel" value="<?php echo htmlspecialchars($filial['responsavel'] ?? ''); ?>">
       </div>
       
-      <button type="submit">Cadastrar Filial</button>
+      <button type="submit">Atualizar Filial</button>
     </form>
 
-    <a href="filiais.php" class="voltar">← Voltar ao Menu</a>
+    <a href="listar_filiais.php" class="voltar">← Voltar para Lista</a>
   </div>
 </body>
 </html>
+<?php
+$conn->close();
+?>

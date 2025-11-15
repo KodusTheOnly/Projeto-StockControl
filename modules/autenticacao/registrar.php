@@ -1,6 +1,6 @@
 <?php
 // RF01.2 - Cadastro de novo usuário
-include_once("conexao.php");
+include_once("../../config/conexao.php");
 
 // Captura dados do formulário
 $nome  = isset($_POST["nome"])  ? trim($_POST["nome"])  : "";
