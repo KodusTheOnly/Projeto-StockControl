@@ -64,6 +64,21 @@ CREATE TABLE lotes (
     FOREIGN KEY (produto_id) REFERENCES produtos(id)
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- MÓDULO DE GESTÃO DE FILIAIS
+-- Tabela de filiais (RF08)
+CREATE TABLE filiais (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  nome VARCHAR(150) NOT NULL,
+  endereco VARCHAR(255) DEFAULT NULL,
+  telefone VARCHAR(30) DEFAULT NULL,
+  responsavel VARCHAR(120) DEFAULT NULL,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  INDEX idx_nome (nome)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 /*
 RELACIONAMENTOS:
   1. usuarios (1) ←→ (N) senha_tokens
@@ -74,13 +89,12 @@ RELACIONAMENTOS:
     - Um produto pode ter vários lotes no estoque
     - CASCADE: Se produto for excluído, lotes também são
 
-ÍNDICES:
-  - Criados em campos de busca frequente (email, perfil, categoria)
-  - Otimizam consultas e melhoram performance
+  3. filiais
+    - Tabela independente para gestão de filiais do supermercado
 
-VIEWS:
-  - vw_produtos_estoque: Facilita consulta de quantidade total
-  - vw_produtos_vencendo: Útil para sistema de alertas
+ÍNDICES:
+  - Criados em campos de busca frequente (email, perfil, categoria, nome)
+  - Otimizam consultas e melhoram performance
 
 CHARSET:
   - utf8mb4: Suporte completo a caracteres especiais e emojis
