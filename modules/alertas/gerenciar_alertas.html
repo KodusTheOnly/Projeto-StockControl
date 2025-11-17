@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerenciar Alertas de Validade</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      color: #0077cc;
+      margin-bottom: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    
+    .stat-card.danger {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    
+    .stat-card.warning {
+      background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+    
+    .stat-card.success {
+      background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+    }
+    
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    
+    .stat-label {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s;
+      text-decoration: none;
+      display: inline-block;
+    }
+    
+    .btn-primary {
+      background-color: #0077cc;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background-color: #005fa3;
+    }
+    
+    .btn-success {
+      background-color: #28a745;
+      color: white;
+    }
+    
+    .btn-warning {
+      background-color: #ffc107;
+      color: #333;
+    }
+    
+    .btn-danger {
+      background-color: #dc3545;
+      color: white;
+    }
+    
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+    
+    .filters {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    .filter-group label {
+      font-size: 12px;
+      color: #666;
+      font-weight: 600;
+    }
+    
+    .filter-group select {
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: white;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    
+    th {
+      background-color: #f8f9fa;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    tr:hover {
+      background-color: #f5f5f5;
+    }
+    
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .status-ativo {
+      background-color: #dc3545;
+      color: white;
+    }
+    
+    .status-pendente {
+      background-color: #ffc107;
+      color: #333;
+    }
+    
+    .status-visualizado {
+      background-color: #28a745;
+      color: white;
+    }
+    
+    .urgencia-badge {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    
+    .urgencia-ativo {
+      background-color: #dc3545;
+      animation: pulse 2s infinite;
+    }
+    
+    .urgencia-proximo {
+      background-color: #ffc107;
+    }
+    
+    .urgencia-futuro {
+      background-color: #28a745;
+    }
+    
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+      }
+    }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.4);
+    }
+    
+    .modal-content {
+      background-color: #fefefe;
+      margin: 5% auto;
+      padding: 30px;
+      border: 1px solid #888;
+      width: 90%;
+      max-width: 500px;
+      border-radius: 8px;
+    }
+    
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    
+    .close:hover {
+      color: black;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    
+    .form-group input[type="date"] {
+      font-family: inherit;
+    }
+    
+    .acoes {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+    
+    .empty-state h3 {
+      color: #999;
+      margin-bottom: 10px;
+    }
+    
+    .alert-notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #dc3545;
+      color: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: none;
+      z-index: 2000;
+      animation: slideIn 0.3s ease;
+    }
+    
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    
+    .voltar {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: #0077cc;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    
+    .voltar:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="../produtos/cadastro_produtos.html" class="voltar">&larr; Voltar para Produtos</a>
+    
+    <!-- RF07 - Gerenciamento de Alertas de Validade -->
+    <h1>
+      Gerenciar Alertas de Validade
+      <button class="btn btn-primary" onclick="abrirModalNovoAlerta()">+ Novo Alerta</button>
+    </h1>
+    
+    <!-- Estatísticas -->
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-total">0</div>
+        <div class="stat-label">Total de Alertas</div>
+      </div>
+      <div class="stat-card danger">
+        <div class="stat-value" id="stat-ativos">0</div>
+        <div class="stat-label">Alertas Ativos</div>
+      </div>
+      <div class="stat-card warning">
+        <div class="stat-value" id="stat-pendentes">0</div>
+        <div class="stat-label">Alertas Pendentes</div>
+      </div>
+      <div class="stat-card success">
+        <div class="stat-value" id="stat-proximos">0</div>
+        <div class="stat-label">Próximos 7 dias</div>
+      </div>
+    </div>
+    
+    <!-- Filtros -->
+    <div class="filters">
+      <div class="filter-group">
+        <label>Status</label>
+        <select id="filtro-status" onchange="aplicarFiltros()">
+          <option value="">Todos</option>
+          <option value="ativo">Ativos</option>
+          <option value="pendente">Pendentes</option>
+          <option value="visualizado">Visualizados</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Ordenar por</label>
+        <select id="filtro-ordem" onchange="aplicarFiltros()">
+          <option value="urgencia">Urgência</option>
+          <option value="data">Data do Alerta</option>
+          <option value="validade">Data de Validade</option>
+        </select>
+      </div>
+    </div>
+    
+    <!-- Tabela de Alertas -->
+    <table id="tabela-alertas">
+      <thead>
+        <tr>
+          <th>Urgência</th>
+          <th>Produto</th>
+          <th>Lote</th>
+          <th>Validade</th>
+          <th>Data do Alerta</th>
+          <th>Tipo</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Alertas aparecem aqui -->
+      </tbody>
+    </table>
+    
+    <div id="empty-state" class="empty-state" style="display: none;">
+      <h3>Nenhum alerta cadastrado</h3>
+      <p>Clique no botão "Novo Alerta" para adicionar o primeiro alerta de validade.</p>
+    </div>
+  </div>
+  
+  <!-- Modal Novo/Editar Alerta -->
+  <div id="modal-alerta" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="fecharModal()">&times;</span>
+      <h2 id="modal-titulo">Novo Alerta</h2>
+      
+      <form id="form-alerta" onsubmit="salvarAlerta(event)">
+        <input type="hidden" id="alerta-id">
+        
+        <div class="form-group">
+          <label>Produto/Lote</label>
+          <select id="alerta-lote" required>
+            <option value="">Selecione um lote...</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Tipo de Alerta</label>
+          <select id="alerta-tipo" onchange="toggleDataPersonalizada()" required>
+            <option value="">Selecione...</option>
+            <option value="3_dias">3 dias antes</option>
+            <option value="1_semana">1 semana antes</option>
+            <option value="1_mes">1 mês antes</option>
+            <option value="personalizado">Data personalizada</option>
+          </select>
+        </div>
+        
+        <div class="form-group" id="grupo-data-personalizada" style="display: none;">
+          <label>Data do Alerta</label>
+          <input type="date" id="alerta-data">
+        </div>
+        
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button type="button" class="btn" onclick="fecharModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar Alerta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Notificação de Alertas -->
+  <div id="alert-notification" class="alert-notification"></div>
+  
+  <script>
+    const API_URL = 'alertas.php';
+    const API_PRODUTOS = '../produtos/produtos.php';
+    let alertas = [];
+    let todosLotes = [];
+    let alertaEditando = null;
+    let carregandoLotesPromise = null;
+    
+    // Carrega alertas
+    async function carregarAlertas() {
+      try {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+        
+        if (data.success) {
+          alertas = data.alertas || [];
+          atualizarEstatisticas(data.estatisticas);
+          renderizarTabela();
+          verificarAlertasAtivos();
+        }
+      } catch (error) {
+        console.error('Erro ao carregar alertas:', error);
+      }
+    }
+    
+    // Carrega lotes disponíveis
+    async function carregarLotes() {
+      if (carregandoLotesPromise) {
+        await carregandoLotesPromise;
+        return;
+      }
+      
+      carregandoLotesPromise = (async () => {
+        try {
+          const response = await fetch(API_PRODUTOS);
+          const data = await response.json();
+          
+          if (data.success) {
+            const selectLote = document.getElementById('alerta-lote');
+            const fragment = document.createDocumentFragment();
+            selectLote.innerHTML = '<option value="">Selecione um lote...</option>';
+            todosLotes = [];
+            
+            const produtos = data.produtos || [];
+            const promessas = produtos.map(async produto => {
+              const resp = await fetch(`${API_PRODUTOS}?id=${produto.id}`);
+              const detalhes = await resp.json();
+              if (detalhes.success && detalhes.produto?.lotes) {
+                detalhes.produto.lotes.forEach(lote => {
+                  const option = document.createElement('option');
+                  option.value = lote.id;
+                  option.textContent = `${produto.nome} - Lote: ${lote.lote} - Validade: ${lote.validade}`;
+                  option.dataset.validade = lote.validade;
+                  fragment.appendChild(option);
+                  todosLotes.push({
+                    ...lote,
+                    produto_nome: produto.nome,
+                    produto_id: produto.id
+                  });
+                });
+              }
+            });
+            
+            await Promise.all(promessas);
+            selectLote.appendChild(fragment);
+          }
+        } catch (error) {
+          console.error('Erro ao carregar lotes:', error);
+        } finally {
+          carregandoLotesPromise = null;
+        }
+      })();
+      
+      await carregandoLotesPromise;
+    }
+    
+    // Atualiza estatísticas
+    function atualizarEstatisticas(stats) {
+      if (!stats) return;
+      
+      document.getElementById('stat-total').textContent = stats.total || 0;
+      document.getElementById('stat-ativos').textContent = stats.ativos || 0;
+      document.getElementById('stat-pendentes').textContent = stats.pendentes || 0;
+      document.getElementById('stat-proximos').textContent = stats.proximos_7_dias || 0;
+    }
+    
+    // Renderiza tabela de alertas
+    function renderizarTabela() {
+      const tbody = document.querySelector('#tabela-alertas tbody');
+      const emptyState = document.getElementById('empty-state');
+      
+      if (alertas.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+      }
+      
+      emptyState.style.display = 'none';
+      
+      // Aplica filtros
+      let alertasFiltrados = [...alertas];
+      const filtroStatus = document.getElementById('filtro-status').value;
+      
+      if (filtroStatus) {
+        alertasFiltrados = alertasFiltrados.filter(a => a.status === filtroStatus);
+      }
+      
+      // Aplica ordenação
+      const filtroOrdem = document.getElementById('filtro-ordem').value;
+      alertasFiltrados.sort((a, b) => {
+        switch (filtroOrdem) {
+          case 'data':
+            return new Date(a.data_alerta) - new Date(b.data_alerta);
+          case 'validade':
+            return new Date(a.validade) - new Date(b.validade);
+          default: // urgencia
+            const urgenciaOrdem = { 'ativo': 0, 'proximo': 1, 'futuro': 2 };
+            return urgenciaOrdem[a.urgencia] - urgenciaOrdem[b.urgencia];
+        }
+      });
+      
+      tbody.innerHTML = alertasFiltrados.map(alerta => `
+        <tr>
+          <td>
+            <span class="urgencia-badge urgencia-${alerta.urgencia}"></span>
+            ${alerta.urgencia === 'ativo' ? 'Ativo!' : alerta.urgencia === 'proximo' ? 'Próximo' : 'Futuro'}
+          </td>
+          <td>${alerta.produto_nome}</td>
+          <td>${alerta.lote}</td>
+          <td>${formatarData(alerta.validade)}</td>
+          <td>${formatarData(alerta.data_alerta)}</td>
+          <td>${formatarTipoAlerta(alerta.tipo_alerta)}</td>
+          <td>
+            <span class="status-badge status-${alerta.status}">${alerta.status}</span>
+          </td>
+          <td>
+            <div class="acoes">
+              <button class="btn btn-small btn-primary" onclick="verDetalhes(${alerta.id})">Detalhes</button>
+              ${alerta.status === 'ativo' ? 
+                `<button class="btn btn-small btn-success" onclick="marcarVisualizado(${alerta.id})">✓</button>` : ''}
+              <button class="btn btn-small btn-warning" onclick="editarAlerta(${alerta.id})">Editar</button>
+              <button class="btn btn-small btn-danger" onclick="excluirAlerta(${alerta.id})">Excluir</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+    
+    // Formata data
+    function formatarData(dataISO) {
+      if (!dataISO) return '-';
+      const [ano, mes, dia] = dataISO.split('-');
+      return `${dia}/${mes}/${ano}`;
+    }
+    
+    // Formata tipo de alerta
+    function formatarTipoAlerta(tipo) {
+      const tipos = {
+        '3_dias': '3 dias antes',
+        '1_semana': '1 semana antes',
+        '1_mes': '1 mês antes',
+        'personalizado': 'Personalizado'
+      };
+      return tipos[tipo] || tipo;
+    }
+    
+    // Aplica filtros
+    function aplicarFiltros() {
+      renderizarTabela();
+    }
+    
+    // Abre modal para novo alerta
+    function abrirModalNovoAlerta() {
+      document.getElementById('modal-titulo').textContent = 'Novo Alerta';
+      document.getElementById('alerta-id').value = '';
+      document.getElementById('form-alerta').reset();
+      toggleDataPersonalizada();
+      document.getElementById('modal-alerta').style.display = 'block';
+      alertaEditando = null;
+    }
+    
+    // Abre modal para editar alerta
+    async function editarAlerta(id) {
+      const alerta = alertas.find(a => a.id == id);
+      if (!alerta) return;
+      
+      alertaEditando = alerta;
+      document.getElementById('modal-titulo').textContent = 'Editar Alerta';
+      document.getElementById('alerta-id').value = id;
+      
+      // Aguarda lotes carregarem
+      if (todosLotes.length === 0) {
+        await carregarLotes();
+      }
+      
+      document.getElementById('alerta-lote').value = alerta.lote_id;
+      document.getElementById('alerta-tipo').value = alerta.tipo_alerta;
+      const campoData = document.getElementById('alerta-data');
+      campoData.value = alerta.tipo_alerta === 'personalizado' ? alerta.data_alerta : '';
+      toggleDataPersonalizada();
+      
+      document.getElementById('modal-alerta').style.display = 'block';
+    }
+    
+    // Fecha modal
+    function fecharModal() {
+      document.getElementById('modal-alerta').style.display = 'none';
+      document.getElementById('form-alerta').reset();
+      toggleDataPersonalizada();
+      alertaEditando = null;
+    }
+    
+    // Toggle data personalizada
+    function toggleDataPersonalizada() {
+      const tipo = document.getElementById('alerta-tipo').value;
+      const grupoData = document.getElementById('grupo-data-personalizada');
+      
+      if (tipo === 'personalizado') {
+        grupoData.style.display = 'block';
+        document.getElementById('alerta-data').required = true;
+      } else {
+        grupoData.style.display = 'none';
+        document.getElementById('alerta-data').required = false;
+      }
+    }
+    
+    // Salva alerta
+    async function salvarAlerta(event) {
+      event.preventDefault();
+      
+      const id = document.getElementById('alerta-id').value;
+      const loteId = document.getElementById('alerta-lote').value;
+      const tipo = document.getElementById('alerta-tipo').value;
+      const dataPersonalizada = document.getElementById('alerta-data').value;
+      
+      if (!loteId) {
+        alert('Selecione um lote válido.');
+        return;
+      }
+      
+      const payload = {
+        tipo_alerta: tipo
+      };
+      
+      if (tipo === 'personalizado') {
+        if (!dataPersonalizada) {
+          alert('Informe a data do alerta.');
+          return;
+        }
+        payload.data_personalizada = dataPersonalizada;
+      }
+      
+      payload.lote_id = Number(loteId);
+      
+      try {
+        const url = id ? `${API_URL}?id=${id}` : API_URL;
+        const method = id ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          alert(data.mensagem || 'Alerta salvo com sucesso!');
+          fecharModal();
+          carregarAlertas();
+        } else {
+          alert('Erro: ' + (data.error || 'Erro ao salvar alerta'));
+        }
+      } catch (error) {
+        alert('Erro ao salvar alerta: ' + error);
+      }
+    }
+    
+    // Ver detalhes do alerta
+    function verDetalhes(id) {
+      const alerta = alertas.find(a => a.id == id);
+      if (!alerta) return;
+      
+      const detalhes = `
+        Produto: ${alerta.produto_nome}
+        Categoria: ${alerta.categoria}
+        Lote: ${alerta.lote}
+        Fornecedor: ${alerta.fornecedor}
+        Quantidade: ${alerta.quantidade}
+        Validade: ${formatarData(alerta.validade)}
+        Dias para vencer: ${alerta.dias_para_vencer}
+        Data do Alerta: ${formatarData(alerta.data_alerta)}
+        Tipo: ${formatarTipoAlerta(alerta.tipo_alerta)}
+        Status: ${alerta.status}
+      `;
+      
+      alert(detalhes);
+    }
+    
+    // Marca alerta como visualizado
+    async function marcarVisualizado(id) {
+      try {
+        const response = await fetch(`${API_URL}?id=${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ acao: 'visualizar' })
+        });
+        
+        if (response.ok) {
+          carregarAlertas();
+        }
+      } catch (error) {
+        alert('Erro ao marcar como visualizado');
+      }
+    }
+    
+    // Exclui alerta
+    async function excluirAlerta(id) {
+      if (!confirm('Tem certeza que deseja excluir este alerta?')) return;
+      
+      try {
+        const response = await fetch(`${API_URL}?id=${id}`, {
+          method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          alert('Alerta excluído com sucesso!');
+          carregarAlertas();
+        } else {
+          alert('Erro ao excluir alerta');
+        }
+      } catch (error) {
+        alert('Erro ao excluir alerta: ' + error);
+      }
+    }
+    
+    // Verifica alertas ativos para mostrar notificação
+    function verificarAlertasAtivos() {
+      const ativos = alertas.filter(a => a.status === 'ativo');
+      
+      if (ativos.length > 0) {
+        const notification = document.getElementById('alert-notification');
+        notification.innerHTML = `
+          <strong>⚠️ Atenção!</strong><br>
+          Você tem ${ativos.length} produto(s) próximos do vencimento!
+        `;
+        notification.style.display = 'block';
+        
+        setTimeout(() => {
+          notification.style.display = 'none';
+        }, 5000);
+      }
+    }
+    
+    // Inicialização
+    document.addEventListener('DOMContentLoaded', () => {
+      carregarAlertas();
+      carregarLotes();
+      
+      // Atualiza alertas a cada 30 segundos
+      setInterval(carregarAlertas, 30000);
+    });
+    
+    // Fecha modal ao clicar fora
+    window.onclick = function(event) {
+      const modal = document.getElementById('modal-alerta');
+      if (event.target == modal) {
+        fecharModal();
+      }
+    }
+  </script>
+</body>
+</html>

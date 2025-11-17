@@ -99,3 +99,58 @@ RELACIONAMENTOS:
 CHARSET:
   - utf8mb4: Suporte completo a caracteres especiais e emojis
 */
+
+-- RF07 - MÓDULO DE ALERTAS DE VALIDADE
+-- Adicionar à base de dados StockControl
+USE StockControl;
+
+-- Tabela de alertas de validade (RF07)
+CREATE TABLE IF NOT EXISTS alertas_validade (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  lote_id INT UNSIGNED NOT NULL,
+  produto_id INT UNSIGNED NOT NULL,
+  tipo_alerta ENUM('1_semana', '1_mes', '3_dias', 'personalizado') NOT NULL,
+  dias_antecedencia INT NOT NULL COMMENT 'Número de dias antes da validade',
+  data_alerta DATE NOT NULL COMMENT 'Data calculada para o alerta',
+  status ENUM('pendente', 'ativo', 'visualizado') DEFAULT 'pendente',
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  INDEX idx_lote (lote_id),
+  INDEX idx_produto (produto_id),
+  INDEX idx_data_alerta (data_alerta),
+  INDEX idx_status (status),
+  CONSTRAINT fk_alertas_lote 
+    FOREIGN KEY (lote_id) REFERENCES lotes(id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_alertas_produto 
+    FOREIGN KEY (produto_id) REFERENCES produtos(id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- View para facilitar consultas de alertas com informações completas
+CREATE OR REPLACE VIEW v_alertas_completos AS
+SELECT 
+  a.id,
+  a.lote_id,
+  a.produto_id,
+  a.tipo_alerta,
+  a.dias_antecedencia,
+  a.data_alerta,
+  a.status,
+  p.nome AS produto_nome,
+  p.categoria,
+  l.lote,
+  l.validade,
+  l.quantidade,
+  l.fornecedor,
+  DATEDIFF(l.validade, CURDATE()) AS dias_para_vencer,
+  CASE 
+    WHEN a.data_alerta <= CURDATE() AND a.status != 'visualizado' THEN 'ativo'
+    WHEN DATEDIFF(a.data_alerta, CURDATE()) <= 3 THEN 'proximo'
+    ELSE 'futuro'
+  END AS urgencia
+FROM alertas_validade a
+JOIN lotes l ON a.lote_id = l.id
+JOIN produtos p ON a.produto_id = p.id;
+

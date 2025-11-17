@@ -4,7 +4,130 @@
   <meta charset="UTF-8">
   <title>QR Code do Produto</title>
   <style>
-    /* Estilos mantidos */
+    :root {
+      color-scheme: light;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    .voltar {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: #0077cc;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .voltar:hover {
+      text-decoration: underline;
+    }
+
+    h1 {
+      color: #0077cc;
+      margin: 0 0 20px;
+    }
+
+    .status {
+      padding: 12px 16px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      margin-bottom: 20px;
+      display: none;
+      font-weight: 600;
+    }
+
+    .status.success {
+      display: block;
+      color: #155724;
+      background-color: #d4edda;
+      border-color: #c3e6cb;
+    }
+
+    .status.error {
+      display: block;
+      color: #721c24;
+      background-color: #f8d7da;
+      border-color: #f5c6cb;
+    }
+
+    .info {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 25px;
+    }
+
+    .info h2 {
+      margin: 0 0 10px;
+    }
+
+    .qr-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+      padding: 25px;
+      border: 1px dashed #ced4da;
+      border-radius: 8px;
+      background: #fff;
+      margin-bottom: 25px;
+    }
+
+    #qr-code {
+      width: 220px;
+      height: 220px;
+    }
+
+    #qr-link {
+      color: #0077cc;
+      word-break: break-all;
+    }
+
+    .acoes {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    button {
+      cursor: pointer;
+      padding: 10px 24px;
+      border-radius: 4px;
+      border: none;
+      font-weight: 600;
+      font-size: 14px;
+      background: #dc3545;
+      color: #fff;
+      transition: background 0.2s ease;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    button:not(:disabled):hover {
+      background: #c82333;
+    }
   </style>
 </head>
 <body>
@@ -81,8 +204,11 @@
     function preencherInfo(produto) {
       nomeEl.textContent = produto.nome || 'Produto';
       categoriaEl.textContent = produto.categoria ? `Categoria: ${produto.categoria}` : '';
-      loteEl.textContent = produto.lote || '-';
-      validadeEl.textContent = (produto.validade || '').substring(0, 10) || '-';
+      const primeiroLote = Array.isArray(produto.lotes) && produto.lotes.length > 0 ? produto.lotes[0] : null;
+      const loteTexto = primeiroLote?.lote || produto.lote || '-';
+      const validadeFonte = primeiroLote?.validade || produto.validade || '';
+      loteEl.textContent = loteTexto;
+      validadeEl.textContent = validadeFonte ? validadeFonte.substring(0, 10) : '-';
     }
 
     // RF04.2 - Gera link para consulta do produto via QR Code
