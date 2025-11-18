@@ -157,15 +157,15 @@ if (!isset($_SESSION['logado_filial'])) {
     <div class="usuario-info">
       Usuário: <?php echo htmlspecialchars($_SESSION['usuario_filial'] ?? 'Admin'); ?>
     </div>
-  </header>
+</header>
 
-  <nav>
+<nav>
     <ul>
       <li><a href="cadastrar_filial.php">Cadastrar Filial</a></li>
       <li><a href="listar_filiais.php">Listar Filiais</a></li>
       <li><a href="../autenticacao/login.html">Voltar ao Sistema Principal</a></li>
     </ul>
-  </nav>
+</nav>
 
   <main>
     <h2>Bem-vindo ao Sistema de Gerenciamento de Filiais</h2>
